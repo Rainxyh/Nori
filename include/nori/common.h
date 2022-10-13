@@ -44,6 +44,8 @@
 #define TT2 std::cout<<"TEST2"<<std::endl;
 #define TT3 std::cout<<"TEST3"<<std::endl;
 #define TT4 std::cout<<"TEST4"<<std::endl;
+#define TT5 std::cout<<"TEST5"<<std::endl;
+#define TT6 std::cout<<"TEST6"<<std::endl;
 #define M_PI         3.14159265358979323846f
 #define INV_PI       0.31830988618379067154f
 #define INV_TWOPI    0.15915494309189533577f
@@ -116,7 +118,6 @@ class BlockGenerator;
 class Camera;
 class ImageBlock;
 class Integrator;
-class KDTree;
 class Emitter;
 class Mesh;
 class NoriObject;

@@ -67,6 +67,14 @@ struct TRay {
     /// Return the position of a point along the ray
     PointType operator() (Scalar t) const { return o + t * d; }
 
+    TRay &operator=(const TRay &ray)
+    {
+        this->o = ray.o;
+        this->d = ray.d;
+        this->dRcp = ray.dRcp;
+        return *this;
+    }
+
     /// Return a ray that points into the opposite direction
     TRay reverse() const {
         TRay result;

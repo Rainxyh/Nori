@@ -94,7 +94,7 @@ public:
 
     task *execute() {
         uint32_t size = (uint32_t) (end-start);
-        BVH::BVHNode &node = bvh.m_nodes[node_idx];
+        BVH::BVHNode &node = bvh.m_nodeNums[node_idx];
 
         /* Switch to a serial build when less than SERIAL_THRESHOLD triangles are left */
         if (size < SERIAL_THRESHOLD) {
@@ -174,8 +174,8 @@ public:
         int node_idx_left = node_idx+1;
         int node_idx_right = node_idx+2*left_count;
 
-        bvh.m_nodes[node_idx_left ].bbox = bbox_left[best_index];
-        bvh.m_nodes[node_idx_right].bbox = best_bbox_right;
+        bvh.m_nodeNums[node_idx_left ].bbox = bbox_left[best_index];
+        bvh.m_nodeNums[node_idx_right].bbox = best_bbox_right;
         node.inner.rightChild = node_idx_right;
         node.inner.axis = axis;
         node.inner.flag = 0;
@@ -229,7 +229,7 @@ public:
 
     /// Single-threaded build function
     static void execute_serially(BVH &bvh, uint32_t node_idx, uint32_t *start, uint32_t *end, uint32_t *temp) {
-        BVH::BVHNode &node = bvh.m_nodes[node_idx];
+        BVH::BVHNode &node = bvh.m_nodeNums[node_idx];
         uint32_t size = (uint32_t) (end - start);
         float best_cost = (float) INTERSECTION_COST * size;
         int64_t best_index = -1, best_axis = -1;
@@ -312,10 +312,10 @@ void BVH::clear() {
     m_meshes.clear();
     m_meshOffset.clear();
     m_meshOffset.push_back(0u);
-    m_nodes.clear();
+    m_nodeNums.clear();
     m_indices.clear();
     m_bbox.reset();
-    m_nodes.shrink_to_fit();
+    m_nodeNums.shrink_to_fit();
     m_meshes.shrink_to_fit();
     m_meshOffset.shrink_to_fit();
     m_indices.shrink_to_fit();
@@ -332,9 +332,9 @@ void BVH::build() {
     Timer timer;
 
     /* Conservative estimate for the total number of nodes */
-    m_nodes.resize(2*size);
-    memset(m_nodes.data(), 0, sizeof(BVHNode) * m_nodes.size());
-    m_nodes[0].bbox = m_bbox;
+    m_nodeNums.resize(2*size);
+    memset(m_nodeNums.data(), 0, sizeof(BVHNode) * m_nodeNums.size());
+    m_nodeNums[0].bbox = m_bbox;
     m_indices.resize(size);
 
     if (sizeof(BVHNode) != 32)
@@ -353,13 +353,13 @@ void BVH::build() {
     /* The node array was allocated conservatively and now contains
        many unused entries -- do a compactification pass. */
     std::vector<BVHNode> compactified(stats.second);
-    std::vector<uint32_t> skipped_accum(m_nodes.size());
+    std::vector<uint32_t> skipped_accum(m_nodeNums.size());
 
-    for (int64_t i = stats.second-1, j = m_nodes.size(), skipped = 0; i >= 0; --i) {
-        while (m_nodes[--j].isUnused())
+    for (int64_t i = stats.second-1, j = m_nodeNums.size(), skipped = 0; i >= 0; --i) {
+        while (m_nodeNums[--j].isUnused())
             skipped++;
         BVHNode &new_node = compactified[i];
-        new_node = m_nodes[j];
+        new_node = m_nodeNums[j];
         skipped_accum[j] = (uint32_t) skipped;
 
         if (new_node.isInner()) {
@@ -369,22 +369,22 @@ void BVH::build() {
         }
     }
     cout << "done (took " << timer.elapsedString() << " and "
-        << memString(sizeof(BVHNode) * m_nodes.size() + sizeof(uint32_t)*m_indices.size())
+        << memString(sizeof(BVHNode) * m_nodeNums.size() + sizeof(uint32_t)*m_indices.size())
         << ", SAH cost = " << stats.first
         << ")." << endl;
 
-    m_nodes = std::move(compactified);
+    m_nodeNums = std::move(compactified);
 }
 
 std::pair<float, uint32_t> BVH::statistics(uint32_t node_idx) const {
-    const BVHNode &node = m_nodes[node_idx];
+    const BVHNode &node = m_nodeNums[node_idx];
     if (node.isLeaf()) {
         return std::make_pair((float) BVHBuildTask::INTERSECTION_COST * node.leaf.size, 1u);
     } else {
         std::pair<float, uint32_t> stats_left = statistics(node_idx + 1u);
         std::pair<float, uint32_t> stats_right = statistics(node.inner.rightChild);
-        float saLeft = m_nodes[node_idx + 1u].bbox.getSurfaceArea();
-        float saRight = m_nodes[node.inner.rightChild].bbox.getSurfaceArea();
+        float saLeft = m_nodeNums[node_idx + 1u].bbox.getSurfaceArea();
+        float saRight = m_nodeNums[node.inner.rightChild].bbox.getSurfaceArea();
         float saCur = node.bbox.getSurfaceArea();
         float sahCost =
             2 * BVHBuildTask::TRAVERSAL_COST +
@@ -406,14 +406,14 @@ bool BVH::rayIntersect(const Ray3f &_ray, Intersection &its, bool shadowRay) con
     if (ray.mint == Epsilon)
         ray.mint = std::max(ray.mint, ray.mint * ray.o.array().abs().maxCoeff());
 
-    if (m_nodes.empty() || ray.maxt < ray.mint)
+    if (m_nodeNums.empty() || ray.maxt < ray.mint)
         return false;
 
     bool foundIntersection = false;
     uint32_t f = 0;
 
     while (true) {
-        const BVHNode &node = m_nodes[node_idx];
+        const BVHNode &node = m_nodeNums[node_idx];
 
         if (!node.bbox.rayIntersect(ray)) {
             if (stack_idx == 0)

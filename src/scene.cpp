@@ -10,7 +10,9 @@ NORI_NAMESPACE_BEGIN
 
 Scene::Scene(const PropertyList &)
 {
-    m_accel = new Accel();
+    // m_accel = new Accel();
+    // m_accel = new Octtree();
+    m_accel = new SAH();
 }
 
 Scene::~Scene()
@@ -24,7 +26,7 @@ Scene::~Scene()
 // build bounding volume hierarchy and check necessary scene components
 void Scene::activate()
 {
-    std::cout << "Building OctTree" << std::endl;
+    std::cout << "Building accel structure" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
     std::vector<std::vector<uint32_t>> triangle_list;
     BoundingBox3f bbox;
@@ -37,10 +39,10 @@ void Scene::activate()
         triangle_list.push_back(triangle_vec);
         bbox.expandBy(m_meshes[i]->getBoundingBox());
     }
-    m_accel->setOcttree(m_accel->build(bbox, triangle_list, 0));
-    std::cout << tfm::format("Octree build successfully! [depth %d, nodes %d, leaves %d]", m_accel->getOcttreeDepth(), m_accel->getOcttreeNode(), m_accel->getOcttreeLeaf()) << std::endl;
+    m_accel->setNode(m_accel->build(bbox, triangle_list, 0));
+    std::cout << tfm::format("Accel structure build successfully! [depth %d, inner_nodes %d, leaves %d]", m_accel->getTreeDepth(), m_accel->getTreeNodeNum(), m_accel->getTreeLeafNum()) << std::endl;
     auto end = std::chrono::high_resolution_clock::now();
-    std::cout << "OctTree build time:" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms\n";
+    std::cout << "Accel structure build time:" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms\n";
 
     if (!m_integrator)
         throw NoriException("No integrator was specified!");

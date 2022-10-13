@@ -128,7 +128,7 @@ private:
     Integrator *m_integrator = nullptr;
     Sampler *m_sampler = nullptr;
     Camera *m_camera = nullptr;
-    Accel *m_accel = nullptr;
+    Accel *m_accel = nullptr; 
     std::vector<Emitter *> m_emitters;
 };
 

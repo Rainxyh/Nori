@@ -40,7 +40,10 @@
 /* A few useful constants */
 #undef M_PI
 
-#define TEST std::cout<<"TEST"<<std::endl;
+#define TT1 std::cout<<"TEST1"<<std::endl;
+#define TT2 std::cout<<"TEST2"<<std::endl;
+#define TT3 std::cout<<"TEST3"<<std::endl;
+#define TT4 std::cout<<"TEST4"<<std::endl;
 #define M_PI         3.14159265358979323846f
 #define INV_PI       0.31830988618379067154f
 #define INV_TWOPI    0.15915494309189533577f

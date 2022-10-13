@@ -160,7 +160,7 @@ protected:
 private:
     std::vector<Mesh *> m_meshes;       ///< List of meshes registered with the BVH
     std::vector<uint32_t> m_meshOffset; ///< Index of the first triangle for each shape
-    std::vector<BVHNode> m_nodes;       ///< BVH nodes
+    std::vector<BVHNode> m_nodeNums;       ///< BVH nodes
     std::vector<uint32_t> m_indices;    ///< Index references by BVH nodes
     BoundingBox3f m_bbox;               ///< Bounding box of the entire BVH
 };

@@ -1,6 +1,5 @@
 /*
     This file is part of Nori, a simple educational ray tracer
-
     Copyright (c) 2015 by Wenzel Jakob
 */
 
@@ -9,44 +8,227 @@
 
 NORI_NAMESPACE_BEGIN
 
-void Accel::addMesh(Mesh *mesh)
-{
-    m_meshes.push_back(mesh);
-    m_bbox.expandBy(mesh->getBoundingBox());
-}
-
 void Accel::build()
 {
-    /* Nothing to do here for now */
+    /* Brute force search through all triangles */
+    // for (uint32_t idx = 0; idx < m_meshes->getTriangleCount(); ++idx) {
+    //     float u, v, t;
+    //     if (m_meshes->rayIntersect(idx, ray, u, v, t)) {
+    //         /* An intersection was found! Can terminate
+    //            immediately if this is a shadow ray query */
+    //         if (shadowRay)
+    //             return true;
+    //         its.t = ray.maxt = t;
+    //         its.uv = Point2f(u, v);
+    //         its.mesh = m_meshes;
+    //         hitIdx = idx;
+    //         foundIntersection = true;
+    //     }
+    // }
 }
 
-OcttreeNode *Accel::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+/*
+For each axis: x, y, z:
+    initialize B buckets
+    For each primitive p in node:
+        b = compute_bucket(p.centroid)
+        b.bbox.union(p.bbox);
+        ++b.prim_count;
+    For each of the B-1 possible partitioning planes evaluate SAH
+Execute lowest cost partitioning found (or make node a leaf)
+*/
+Node *SAH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+{
+    if (!triangle_list.size())
+        return nullptr;
+    uint32_t triangle_num = 0;
+    for (size_t i = 0; i < triangle_list.size(); ++i)
+        triangle_num += triangle_list[i].size(); // total triangle number in this scene
+    if (triangle_num == 0)
+        return nullptr;
+    this->m_maxDepth = std::max(m_maxDepth, depth);
+    Node *node = new Node(m_Dim);
+    node->bbox = box;
+    node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
+    if (triangle_num < 10) // leaf node
+    {
+        node->is_leaf = true;
+        ++this->m_leafNum;
+        for (size_t i = 0; i < m_Dim; ++i)
+            node->child[i] = nullptr;
+        return node;
+    }
+    ++this->m_nodeNum; // internal node
+    Point3f box_min = box.getCorner(0), box_max = box.getCorner(7);
+    Point3f bucket_min, bucket_max;
+    Bucket *buckets[3][nBuckets];
+    float SAH_sorce = std::numeric_limits<float>::infinity();
+    uint16_t chosen_dim = 0, chosen_plane = 0;
+    for (size_t dim_idx = 0; dim_idx < 3; ++dim_idx) // x, y, z axis
+    {
+        float dim_min = box_min[dim_idx], dim_max = box_max[dim_idx];    // min/max in certain dim
+        float delta = (dim_max - dim_min) / (float)nBuckets;             // regional division interval
+        for (size_t bucket_idx = 0; bucket_idx < nBuckets; ++bucket_idx) // travel every bucket
+        {
+            float bucket_left = delta * bucket_idx, bucket_right;
+            bucket_right = bucket_left + delta;
+            bucket_min = box_min;              // first set bucket to min
+            bucket_min[dim_idx] = bucket_left; // seconed set certain axis to division value
+            bucket_max = box_max;
+            bucket_max[dim_idx] = bucket_right;
+
+            std::vector<std::vector<uint32_t>> triangle_idx_list;
+            for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx) // bucket initial every mesh has a triangle_idx vector
+                triangle_idx_list.push_back(std::vector<uint32_t>());
+            buckets[dim_idx][bucket_idx] = new Bucket(BoundingBox3f(), triangle_idx_list, (uint32_t)0);
+        }
+        for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx) // every dim travel all triangle, dim * prim_num
+        {
+            for (size_t triangle_idx = 0; triangle_idx < triangle_list[mesh_idx].size(); ++triangle_idx)
+            {
+                uint32_t triangle_idx_in_mesh_buffer = triangle_list[mesh_idx][triangle_idx];
+                BoundingBox3f triangle_bbox = m_meshes[mesh_idx]->getBoundingBox(triangle_idx_in_mesh_buffer);
+                Point3f prim_center = triangle_bbox.getCenter();
+                float dim_center = prim_center[dim_idx];
+                uint16_t bucket_idx = floor((dim_center - dim_min) / (dim_max - dim_min) * nBuckets); // compute_bucket(centor) get the bucket which contain this triangle
+                bucket_idx = bucket_idx < nBuckets ? bucket_idx : nBuckets - 1;
+                bucket_idx = bucket_idx > 0 ? bucket_idx : 0;
+                buckets[dim_idx][bucket_idx]->bbox.expandBy(triangle_bbox);
+                buckets[dim_idx][bucket_idx]->triangle_idx_list[mesh_idx].push_back(triangle_idx_in_mesh_buffer); // triangle index in certain mesh buffer
+                ++buckets[dim_idx][bucket_idx]->prim_count;
+            }
+        }
+        for (size_t planes_idx = 1; planes_idx < nBuckets; ++planes_idx)
+        {
+            float SA = 0, SB = 0;
+            uint32_t NA = 0, NB = 0;
+            for (size_t i = 0; i < planes_idx; ++i) // left -> partitioning plane
+            {
+                SA += buckets[dim_idx][i]->bbox.getSurfaceArea();
+                NA += buckets[dim_idx][i]->prim_count;
+            }
+            for (size_t j = planes_idx; j < nBuckets; ++j) // partitioning plane -> right
+            {
+                SB += buckets[dim_idx][j]->bbox.getSurfaceArea();
+                NB += buckets[dim_idx][j]->prim_count;
+            }
+            float cost = SAHTravCost + (SA * NA + SB * NB) / (box.getSurfaceArea()) * SAHInterCost;
+            if (std::isfinite(cost) && !std::isnan(cost) && SAH_sorce > cost)
+            {
+                SAH_sorce = cost;
+                chosen_plane = planes_idx;
+                chosen_dim = dim_idx;
+            }
+        }
+    }
+    if (chosen_plane == 0 || chosen_plane == nBuckets - 1) // Prevents multiple left-most or right-most cyclic divisions
+    {
+        node->is_leaf = true;
+        ++this->m_leafNum;
+        for (size_t i = 0; i < m_Dim; ++i)
+            node->child[i] = nullptr;
+        return node;
+    }
+
+    // Divide the current root node to get two child nodes, and the division obtained by comparing the cost value
+    BoundingBox3f child_bbox_list[m_Dim];
+    std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
+    for (size_t plane = 0; plane < chosen_plane; ++plane)
+        child_bbox_list[0].expandBy(buckets[chosen_dim][plane]->bbox);
+    for (size_t plane = chosen_plane; plane < nBuckets; ++plane)
+        child_bbox_list[1].expandBy(buckets[chosen_dim][plane]->bbox);
+    for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx)
+    {
+        regional_division_triangle_list[0].push_back(std::vector<uint32_t>()); // every mesh one triangle vector
+        for (size_t plane = 0; plane < chosen_plane; ++plane)
+        {
+            regional_division_triangle_list[0][mesh_idx].insert(regional_division_triangle_list[0][mesh_idx].end(), // current mesh
+                                                                buckets[chosen_dim][plane]->triangle_idx_list[mesh_idx].begin(),
+                                                                buckets[chosen_dim][plane]->triangle_idx_list[mesh_idx].end()); // push_back certain list to certain mesh
+        }
+        regional_division_triangle_list[1].push_back(std::vector<uint32_t>()); // every mesh one triangle vector
+        for (size_t plane = chosen_plane; plane < nBuckets; ++plane)
+        {
+            regional_division_triangle_list[1][mesh_idx].insert(regional_division_triangle_list[1][mesh_idx].end(), // current mesh
+                                                                buckets[chosen_dim][plane]->triangle_idx_list[mesh_idx].begin(),
+                                                                buckets[chosen_dim][plane]->triangle_idx_list[mesh_idx].end()); // push_back certain list to certain mesh
+        }
+    }
+
+    // Recursion build sub-tree
+    for (size_t i = 0; i < m_Dim; ++i)
+    {
+        node->child[i] = build(child_bbox_list[i], regional_division_triangle_list[i], depth + 1);
+    }
+    return node;
+}
+
+bool SAH::travel(Node *treeNode, Ray3f &ray, Intersection &its, bool shadowRay, uint32_t &hitIdx) const
+{
+    if (!treeNode || !treeNode->bbox.rayIntersect(ray)) // empty tree node or not hit any bounding box
+        return false;
+
+    bool is_hit = false;
+    if (treeNode->is_leaf) // process leaf node
+    {
+        for (size_t i = 0; i < treeNode->triangle_list.size(); ++i)
+        { // travel meshes
+            for (size_t j = 0; j < treeNode->triangle_list[i].size(); j++)
+            { // travel triangles
+                float u, v, t;
+                if (m_meshes[i]->rayIntersect(treeNode->triangle_list[i][j], ray, u, v, t))
+                {
+                    /* An intersection was found! Can terminate
+                    immediately if this is a shadow ray query */
+                    if (shadowRay)
+                        return true;
+                    its.t = ray.maxt = t;
+                    its.uv = Point2f(u, v);
+                    its.mesh = m_meshes[i];
+                    hitIdx = treeNode->triangle_list[i][j];
+                    is_hit = true;
+                }
+            }
+        }
+    }
+    else // recursively process internal nodes
+    {
+        for (size_t i = 0; i < m_Dim; ++i)
+        {
+            is_hit |= travel(treeNode->child[i], ray, its, shadowRay, hitIdx);
+        }
+    }
+    return is_hit;
+}
+
+
+Node *Octtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     if (!triangle_list.size())
         return nullptr;
 
     this->m_maxDepth = std::max(m_maxDepth, depth);
 
-    OcttreeNode *node = new OcttreeNode();
-    node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
+    Node *node = new Node(m_Dim);
     node->bbox = box;
+    node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
     uint32_t triangle_num = 0;
     for (size_t i = 0; i < m_meshes.size(); ++i)
         triangle_num += triangle_list[i].size(); // total triangle number in this scene
         
-    if (triangle_num < 70) // leaf node
+    if (triangle_num < 30) // leaf node
     {
         node->is_leaf = true;
-        ++this->m_leaf;
-        for (size_t i = 0; i < 8; ++i)
+        ++this->m_leafNum;
+        for (size_t i = 0; i < m_Dim; ++i)
             node->child[i] = nullptr;
         return node;
     }
 
-    ++this->m_node; // internal node
+    ++this->m_nodeNum; // internal node
 
-    BoundingBox3f *child_bbox_list[8];
-    for (size_t i = 0; i < 8; ++i) // 8 vertices and midpoints can be divided into 8 sub-bounding boxes
+    BoundingBox3f *child_bbox_list[m_Dim];
+    for (size_t i = 0; i < m_Dim; ++i) // 8 vertices and midpoints can be divided into 8 sub-bounding boxes
     {
         Vector3f minPoint;
         Vector3f maxPoint;
@@ -58,8 +240,8 @@ OcttreeNode *Accel::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> 
     }
 
     // Traverse all triangles and divide the triangles into corresponding sub-bounding boxes according to their positions
-    std::vector<std::vector<uint32_t>> regional_division_triangle_list[8];
-    for (size_t i = 0; i < 8; ++i)
+    std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
+    for (size_t i = 0; i < m_Dim; ++i)
     { // regional division
         for (size_t j = 0; j < m_meshes.size(); ++j)
         { // travel all meshes
@@ -76,7 +258,7 @@ OcttreeNode *Accel::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> 
     }
 
     // Recursion build sub-tree
-    for (size_t i = 0; i < 8; ++i)
+    for (size_t i = 0; i < m_Dim; ++i)
     {
         node->child[i] = build(*child_bbox_list[i], regional_division_triangle_list[i], depth + 1);
         delete child_bbox_list[i];
@@ -85,20 +267,20 @@ OcttreeNode *Accel::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> 
     return node;
 }
 
-bool Accel::travel_octtree(OcttreeNode *octtree, Ray3f &ray, Intersection &its, bool shadowRay, uint32_t &hitIdx) const
+bool Octtree::travel(Node *treeNode, Ray3f &ray, Intersection &its, bool shadowRay, uint32_t &hitIdx) const
 {
-    if (!octtree || !octtree->bbox.rayIntersect(ray)) // empty tree node or not hit any bounding box
+    if (!treeNode || !treeNode->bbox.rayIntersect(ray)) // empty tree node or not hit any bounding box
         return false;
 
     bool is_hit = false;
-    if (octtree->is_leaf) // process leaf node
+    if (treeNode->is_leaf) // process leaf node
     {
-        for (size_t i = 0; i < octtree->triangle_list.size(); ++i)
+        for (size_t i = 0; i < treeNode->triangle_list.size(); ++i)
         { // travel meshes
-            for (size_t j = 0; j < octtree->triangle_list[i].size(); j++)
+            for (size_t j = 0; j < treeNode->triangle_list[i].size(); j++)
             { // travel triangles
                 float u, v, t;
-                if (m_meshes[i]->rayIntersect(octtree->triangle_list[i][j], ray, u, v, t))
+                if (m_meshes[i]->rayIntersect(treeNode->triangle_list[i][j], ray, u, v, t))
                 {
                     /* An intersection was found! Can terminate
                     immediately if this is a shadow ray query */
@@ -107,7 +289,7 @@ bool Accel::travel_octtree(OcttreeNode *octtree, Ray3f &ray, Intersection &its, 
                     its.t = ray.maxt = t;
                     its.uv = Point2f(u, v);
                     its.mesh = m_meshes[i];
-                    hitIdx = octtree->triangle_list[i][j];
+                    hitIdx = treeNode->triangle_list[i][j];
                     is_hit = true;
                 }
             }
@@ -115,23 +297,23 @@ bool Accel::travel_octtree(OcttreeNode *octtree, Ray3f &ray, Intersection &its, 
     }
     else // recursively process internal nodes
     {
-        std::pair<OcttreeNode *, float> rank_list[8];
-        for (size_t i = 0; i < 8; ++i)
+        std::pair<Node *, float> rank_list[m_Dim];
+        for (size_t i = 0; i < m_Dim; ++i)
         {
-            if (octtree->child[i])
+            if (treeNode->child[i])
             {
-                rank_list[i].first = octtree->child[i];
-                rank_list[i].second = octtree->child[i]->bbox.distanceTo(ray.o);
+                rank_list[i].first = treeNode->child[i];
+                rank_list[i].second = treeNode->child[i]->bbox.distanceTo(ray.o);
             }
         }
-        std::sort(rank_list, rank_list + 8, [](const auto &l, const auto &r)
+        std::sort(rank_list, rank_list + m_Dim, [](const auto &l, const auto &r)
                   { return l.second < r.second; });
 
-        for (size_t i = 0; i < 8; ++i)
+        for (size_t i = 0; i < m_Dim; ++i)
         {
             if (rank_list[i].first)
             {
-                is_hit |= travel_octtree(rank_list[i].first, ray, its, shadowRay, hitIdx);
+                is_hit |= travel(rank_list[i].first, ray, its, shadowRay, hitIdx);
                 if (is_hit) // problems can arise when triangles are too dense
                     break;
             }
@@ -147,30 +329,13 @@ bool Accel::rayIntersect(const Ray3f &ray_, Intersection &its, bool shadowRay) c
 
     Ray3f ray(ray_); /// Make a copy of the ray (we will need to update its '.maxt' value)
 
-    /* Brute force search through all triangles */
-    // for (uint32_t idx = 0; idx < m_meshes->getTriangleCount(); ++idx) {
-    //     float u, v, t;
-    //     if (m_meshes->rayIntersect(idx, ray, u, v, t)) {
-    //         /* An intersection was found! Can terminate
-    //            immediately if this is a shadow ray query */
-    //         if (shadowRay)
-    //             return true;
-    //         its.t = ray.maxt = t;
-    //         its.uv = Point2f(u, v);
-    //         its.mesh = m_meshes;
-    //         hitIdx = idx;
-    //         foundIntersection = true;
-    //     }
-    // }
-
-    /*octtree acceleration structure*/
-    foundIntersection = travel_octtree(octtree, ray, its, shadowRay, hitIdx);
+    /*treeNode acceleration structure*/
+    foundIntersection = travel(m_accelNode, ray, its, shadowRay, hitIdx);
 
     if (foundIntersection)
     {
         /* At this point, we now know that there is an intersection,
            and we know the triangle index of the closest such intersection.
-
            The following computes a number of additional properties which
            characterize the intersection (normals, texture coordinates, etc..)
         */

@@ -67,6 +67,8 @@ public:
 
         /*------------------------------------------- next event estimation -------------------------------------------*/
         Li_mat = Li(scene, sampler, Ray3f(x, wi), depth + 1) * fr; // indirect radiance in the corresponding direction wi
+        if (Li_mat.x() < 0 || Li_mat.y() < 0 || Li_mat.z() < 0)
+            Li_mat = Color3f(0.f);
 
         // If light source sampling has already been performed,
         // you need to limit the contribution of the next light source.

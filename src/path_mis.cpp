@@ -75,6 +75,8 @@ public:
         if (scene->rayIntersect(Ray3f(x, wi), next_its))
         {
             Li_mat = Li(scene, sampler, Ray3f(x, wi), depth + 1) * fr;
+            if (Li_mat.x() < 0 || Li_mat.y() < 0 || Li_mat.z() < 0)
+                Li_mat = Color3f(0.f);
             float next_event_estimation = 1.f;
             if (next_its.mesh->isEmitter())
             {

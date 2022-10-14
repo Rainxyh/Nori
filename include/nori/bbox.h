@@ -26,7 +26,7 @@ NORI_NAMESPACE_BEGIN
  * \tparam T The underlying point data type (e.g. \c Point2d)
  * \ingroup libcore
  */
-template <typename _PointType> 
+template <typename _PointType>
 struct TBoundingBox {
     enum {
         Dimension = _PointType::Dimension

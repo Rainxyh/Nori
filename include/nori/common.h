@@ -46,6 +46,7 @@
 #define TT4 std::cout<<"TEST4"<<std::endl;
 #define TT5 std::cout<<"TEST5"<<std::endl;
 #define TT6 std::cout<<"TEST6"<<std::endl;
+
 #define M_PI         3.14159265358979323846f
 #define INV_PI       0.31830988618379067154f
 #define INV_TWOPI    0.15915494309189533577f
@@ -67,6 +68,8 @@ template <typename Scalar, int Dimension>  struct TVector;
 template <typename Scalar, int Dimension>  struct TPoint;
 template <typename Point, typename Vector> struct TRay;
 template <typename Point>                  struct TBoundingBox;
+template <typename Point>                  struct TBoundingSphere;
+template <typename Point>                  struct TBoundingStructure;
 
 /* Basic Nori data structures (vectors, points, rays, bounding boxes,
    kd-trees) are oblivious to the underlying data type and dimension.
@@ -108,6 +111,7 @@ typedef TBoundingBox<Point1i>   BoundingBox1i;
 typedef TBoundingBox<Point2i>   BoundingBox2i;
 typedef TBoundingBox<Point3i>   BoundingBox3i;
 typedef TBoundingBox<Point4i>   BoundingBox4i;
+typedef TBoundingSphere<Point3f> BoundingSphere;
 typedef TRay<Point2f, Vector2f> Ray2f;
 typedef TRay<Point3f, Vector3f> Ray3f;
 

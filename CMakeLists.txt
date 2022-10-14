@@ -45,6 +45,8 @@ add_executable(nori
   include/nori/bitmap.h
   include/nori/block.h
   include/nori/bsdf.h
+  include/nori/bsphere.h
+  include/nori/bstructure.h
   include/nori/bvh.h
   include/nori/camera.h
   include/nori/color.h

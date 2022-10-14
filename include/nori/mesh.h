@@ -9,6 +9,7 @@
 #include <nori/object.h>
 #include <nori/frame.h>
 #include <nori/bbox.h>
+#include <nori/bsphere.h>
 #include <nori/dpdf.h>
 
 NORI_NAMESPACE_BEGIN
@@ -86,9 +87,12 @@ public:
 
     //// Return an axis-aligned bounding box of the entire mesh
     const BoundingBox3f &getBoundingBox() const { return m_bbox; }
+    const BoundingSphere &getBoundingSphere() const { return m_bsphere; }
 
     //// Return an axis-aligned bounding box containing the given triangle
     BoundingBox3f getBoundingBox(uint32_t index) const;
+    BoundingSphere getBoundingSphere(uint32_t index) const;
+    // BoundingStructure getBoundingStructure(uint32_t index) const;
 
     //// Return the centroid of the given triangle
     Point3f getCentroid(uint32_t index) const;
@@ -174,6 +178,7 @@ protected:
     BSDF         *m_bsdf = nullptr;      ///< BSDF of the surface
     Emitter      *m_emitter = nullptr;   ///< Associated emitter, if any
     BoundingBox3f m_bbox;                ///< Bounding box of the mesh
+    BoundingSphere m_bsphere;            ///< Bounding sphere of the mesh
     DiscretePDF  *m_dpdf = nullptr;      ///< Discrete probability density
 }; 
 

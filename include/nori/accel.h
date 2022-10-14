@@ -24,6 +24,7 @@ struct Node
     Node **child = {0};
     std::vector<std::vector<uint32_t>> triangle_list;
     BoundingBox3f bbox;
+    BoundingSphere bsphere;
 };
 class Accel
 {
@@ -42,18 +43,20 @@ public:
     void addMesh(Mesh *mesh)
     {
         m_meshes.push_back(mesh);
-        m_bbox.expandBy(mesh->getBoundingBox());
+        // m_bbox.expandBy(mesh->getBoundingBox());
+        m_bsphere.expandBy(mesh->getBoundingSphere());
     }
     void setNode(Node *m_accelNode) { this->m_accelNode = m_accelNode; }
     const Node *getNode() { return this->m_accelNode; }
     uint32_t getTreeDepth() { return this->m_maxDepth; }
-    uint32_t getTreeNodeNum() { return this->m_nodeNum; }
+    uint32_t getTreeNodeNum() { return this->m_innerNodeNum; }
     uint32_t getTreeLeafNum() { return this->m_leafNum; }
 
     /// Build the acceleration data structure (currently a no-op)
     void build();
     /// Return an axis-aligned box that bounds the scene
     const BoundingBox3f &getBoundingBox() const { return m_bbox; }
+    const BoundingSphere &getBoundingSphere() const { return m_bsphere; }
 
     /**
      * \brief Intersect a ray against all triangles stored in the scene and
@@ -77,22 +80,24 @@ public:
     virtual bool rayIntersect(const Ray3f &ray, Intersection &its, bool shadowRay) const;
     virtual bool travel(Node *treeNode, Ray3f &ray, Intersection &its, bool shadowRay, uint32_t &hitIdx) const;
     virtual Node *build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) = 0;
+    virtual Node *build(BoundingSphere sphere, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) = 0;
+    // virtual Node *build(BoundingStructure struct, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) = 0;
 
 protected:
     std::vector<Mesh *> m_meshes; ///< Mesh (only a single one for now)
     BoundingBox3f m_bbox;         ///< Bounding box of the entire scene
+    BoundingSphere m_bsphere;     ///< Bounding sphere of the entire scene
     Node *m_accelNode;
     uint16_t m_Dim = 2;
     uint32_t m_maxDepth = 0; // treeNode max depth
     uint32_t m_leafNum = 0;  // treeNode max leaf
-    uint32_t m_nodeNum = 0;  // treeNode max node
+    uint32_t m_innerNodeNum = 0;  // treeNode max node
 };
 
 class Octtree : public Accel
 {
 public:
     Octtree() { m_Dim = 8; }
-    // bool rayIntersect(const Ray3f &ray, Intersection &its, bool shadowRay) const override;
     Node *build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
 };
 
@@ -100,7 +105,6 @@ class KDtree : public Accel
 {
 public:
     KDtree() { m_Dim = 2; }
-    // bool rayIntersect(const Ray3f &ray, Intersection &its, bool shadowRay) const override;
     Node *build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
 };
 
@@ -108,8 +112,8 @@ class BVH : public Accel
 {
 public:
     BVH() { m_Dim = 2; }
-    // bool rayIntersect(const Ray3f &ray, Intersection &its, bool shadowRay) const override;
     Node *build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
+    Node *build(BoundingSphere box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth);
 };
 
 class SAH : public Accel

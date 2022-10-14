@@ -84,10 +84,10 @@ public:
     typedef TPoint<Scalar, Dimension>           PointType;
 
     /// Create a new point with constant component values
-    TPoint(Scalar value = (Scalar) 0) { Base::setConstant(value); }
+    TPoint(Scalar value = (Scalar)0) { Base::setConstant(value); }
 
     /// Create a new 2D point (type error if \c Dimension != 2)
-    TPoint(Scalar x, Scalar y) : Base(x, y) { }
+    TPoint(Scalar x, Scalar y) : Base(x, y) {}
 
     /// Create a new 3D point (type error if \c Dimension != 3)
     TPoint(Scalar x, Scalar y, Scalar z) : Base(x, y, z) { }

@@ -60,7 +60,7 @@ void Mesh::uniformSample(Sampler* sampler, Point3f &point, Normal3f &normal) con
 }
 
 void Mesh::uniformSample(Sampler* sampler, Point3f &point, Normal3f &normal, float &pdf) const{
-    size_t idx = m_dpdf->sample(sampler->next1D(), pdf);
+    m_dpdf->sample(sampler->next1D(), pdf);
     uniformSample(sampler, point, normal);
 }
 
@@ -119,6 +119,13 @@ bool Mesh::rayIntersect(const uint32_t index, const Ray3f &ray, float &u, float 
 
 BoundingBox3f Mesh::getBoundingBox(uint32_t index) const {
     BoundingBox3f result(m_V.col(m_F(0, index)));
+    result.expandBy(m_V.col(m_F(1, index)));
+    result.expandBy(m_V.col(m_F(2, index)));
+    return result;
+}
+
+BoundingSphere Mesh::getBoundingSphere(uint32_t index) const {
+    BoundingSphere result(m_V.col(m_F(0, index)));
     result.expandBy(m_V.col(m_F(1, index)));
     result.expandBy(m_V.col(m_F(2, index)));
     return result;

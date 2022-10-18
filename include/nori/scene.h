@@ -103,9 +103,17 @@ public:
     }
 
     /// \brief Return an axis-aligned box that bounds the scene
-    const BoundingBox3f &getBoundingBox() const {
+    const BoundingBox3f *getBoundingBox() const {
         return m_accel->getBoundingBox();
     }
+    const BoundingSphere *getBoundingSphere() const {
+        return m_accel->getBoundingSphere();
+    } 
+    const BoundingStructure *getBoundingStructure() const {
+        return m_accel->getBoundingStructure();
+    }
+
+    void buildAccelStructure();
 
     /**
      * \brief Inherited from \ref NoriObject::activate()
@@ -126,9 +134,9 @@ public:
 private:
     std::vector<Mesh *> m_meshes; // meshes list
     Integrator *m_integrator = nullptr;
-    Sampler *m_sampler = nullptr;
-    Camera *m_camera = nullptr;
-    Accel *m_accel = nullptr; 
+    Sampler    *m_sampler    = nullptr;
+    Camera     *m_camera     = nullptr;
+    Accel      *m_accel      = nullptr; 
     std::vector<Emitter *> m_emitters;
 };
 

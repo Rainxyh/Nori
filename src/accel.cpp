@@ -26,77 +26,33 @@ void Accel::build()
     // }
 }
 
-// Node *BVH::build(BoundingStructure struct, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
-// {
-//     if (!triangle_list.size())
-//         return nullptr;
-//     uint32_t triangle_num = 0;
-//     for (size_t i = 0; i < triangle_list.size(); ++i)
-//         triangle_num += triangle_list[i].size(); // total triangle number in this scene
-//     if (triangle_num == 0)
-//         return nullptr;
-//     this->m_maxDepth = std::max(m_maxDepth, depth);
-//     Node *node = new Node(m_Dim);
-//     node->bstructure = struct;
-//     node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
-//     if (triangle_num < 30) // leaf node
-//     {
-//         node->is_leaf = true;
-//         ++this->m_leafNum;
-//         for (size_t i = 0; i < m_Dim; ++i)
-//             node->child[i] = nullptr;
-//         return node;
-//     }
-//     std::cout<<triangle_num<<std::endl;
-//     ++this->m_innerNodeNum; // internal node
+Node *BVH::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+{
+    if (!BS)
+    {
+        std::cerr << "In Node *BVH::build()" << std::endl;
+        std::cerr << "Input BoundingStructure* BS is NULL!" << std::endl;
+        return nullptr;
+    }
+    Node *result = nullptr;
+    // BoundingSphere *sphere = dynamic_cast<BoundingSphere *>(BS);
+    // BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
+    if (typeid(BoundingBox3f) == typeid(*BS))
+    {
+        std::cout << "Using BoundingBox Accel Structure." << std::endl;
+        BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
+        result = BVH::build(box, triangle_list, depth);
+    }
+    else if (typeid(BoundingSphere) == typeid(*BS))
+    {
+        std::cout << "Using BoundingSphere Accel Structure." << std::endl;
+        BoundingSphere *sphere = dynamic_cast<BoundingSphere *>(BS);
+        result = BVH::build(sphere, triangle_list, depth);
+    }
+    return result;
+}
 
-//     BoundingStructure child_bstruct_list[m_Dim];
-//     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
-
-//     uint8_t chosen_axis = depth % 3;
-//     std::vector<float> center_vec;
-//     for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx)
-//     {
-//         for (size_t triangle_idx = 0; triangle_idx < triangle_list[mesh_idx].size(); ++triangle_idx)
-//         {
-//             uint32_t triangle_idx_in_mesh_buffer = triangle_list[mesh_idx][triangle_idx];
-//             BoundingStructure triangle_bstruct = m_meshes[mesh_idx]->getBoundingStructure(triangle_idx_in_mesh_buffer);
-//             Point3f prim_center = triangle_bstruct.getCenter();
-//             center_vec.push_back(prim_center[chosen_axis]);
-//         }
-//     }
-//     std::sort(center_vec.begin(),center_vec.end());
-//     float axis_obj_mid = center_vec[center_vec.size() / 2];
-//     for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx)
-//     {
-//         for (size_t i = 0; i < m_Dim; ++i)
-//         {
-//             regional_division_triangle_list[i].push_back(std::vector<uint32_t>());
-//         }
-//         for (size_t triangle_idx = 0; triangle_idx < triangle_list[mesh_idx].size(); ++triangle_idx)
-//         {
-//             uint32_t triangle_idx_in_mesh_buffer = triangle_list[mesh_idx][triangle_idx];
-//             BoundingStructure triangle_bstruct = m_meshes[mesh_idx]->getBoundingStructure(triangle_idx_in_mesh_buffer);
-//             Point3f prim_center = triangle_bstruct.getCenter();
-//             uint8_t switch_0_1 = 0;
-//             if (prim_center[chosen_axis] < axis_obj_mid)
-//                 switch_0_1 = 0;
-//             else
-//                 switch_0_1 = 1;
-//             child_bstruct_list[switch_0_1].expandBy(triangle_bstruct);
-//             regional_division_triangle_list[switch_0_1][mesh_idx].push_back(triangle_idx_in_mesh_buffer);
-//         }
-//     }
-
-//     // Recursion build sub-tree
-//     for (size_t i = 0; i < m_Dim; ++i)
-//     {
-//         node->child[i] = build(child_bstruct_list[i], regional_division_triangle_list[i], depth + 1);
-//     }
-//     return node;
-// }
-
-Node *BVH::build(BoundingSphere sphere, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *BVH::build(BoundingSphere *sphere, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     if (!triangle_list.size())
         return nullptr;
@@ -107,9 +63,9 @@ Node *BVH::build(BoundingSphere sphere, std::vector<std::vector<uint32_t>> trian
         return nullptr;
     this->m_maxDepth = std::max(m_maxDepth, depth);
     Node *node = new Node(m_Dim);
-    node->bsphere = sphere;
+    node->BS = node->bsphere = sphere;
     node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
-    if (triangle_num < 30) // leaf node
+    if (triangle_num < 30)               // leaf node
     {
         node->is_leaf = true;
         ++this->m_leafNum;
@@ -117,12 +73,12 @@ Node *BVH::build(BoundingSphere sphere, std::vector<std::vector<uint32_t>> trian
             node->child[i] = nullptr;
         return node;
     }
-    // std::cout<<triangle_num<<std::endl;
     ++this->m_innerNodeNum; // internal node
 
-    BoundingSphere child_bsphere_list[m_Dim];
+    BoundingSphere* child_bsphere_list[m_Dim];
+    for (size_t i = 0; i < m_Dim; ++i)
+        child_bsphere_list[i] = new BoundingSphere();
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
-
     uint8_t chosen_axis = depth % 3;
     std::vector<float> center_vec;
     for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx)
@@ -135,7 +91,7 @@ Node *BVH::build(BoundingSphere sphere, std::vector<std::vector<uint32_t>> trian
             center_vec.push_back(prim_center[chosen_axis]);
         }
     }
-    std::sort(center_vec.begin(),center_vec.end());
+    std::sort(center_vec.begin(), center_vec.end());
     float axis_obj_mid = center_vec[center_vec.size() / 2];
     for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx)
     {
@@ -153,7 +109,7 @@ Node *BVH::build(BoundingSphere sphere, std::vector<std::vector<uint32_t>> trian
                 switch_0_1 = 0;
             else
                 switch_0_1 = 1;
-            child_bsphere_list[switch_0_1].expandBy(triangle_bsphere);
+            child_bsphere_list[switch_0_1]->expandBy(triangle_bsphere);
             regional_division_triangle_list[switch_0_1][mesh_idx].push_back(triangle_idx_in_mesh_buffer);
         }
     }
@@ -166,7 +122,7 @@ Node *BVH::build(BoundingSphere sphere, std::vector<std::vector<uint32_t>> trian
     return node;
 }
 
-Node *BVH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *BVH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     if (!triangle_list.size())
         return nullptr;
@@ -177,9 +133,9 @@ Node *BVH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
         return nullptr;
     this->m_maxDepth = std::max(m_maxDepth, depth);
     Node *node = new Node(m_Dim);
-    node->bbox = box;
+    node->BS = node->bbox = box;
     node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
-    if (triangle_num < 30) // leaf node
+    if (triangle_num < 30)               // leaf node
     {
         node->is_leaf = true;
         ++this->m_leafNum;
@@ -188,12 +144,12 @@ Node *BVH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
         return node;
     }
     ++this->m_innerNodeNum; // internal node
-
-    BoundingBox3f child_bbox_list[m_Dim];
+    BoundingBox3f *child_bbox_list[m_Dim];
+    for (size_t i = 0; i < m_Dim; ++i)
+        child_bbox_list[i] = new BoundingBox3f();
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
-
     uint8_t chosen_axis = depth % 3;
-    Point3f box_min = box.getCorner(0), box_max = box.getCorner(7);
+    Point3f box_min = box->getCorner(0), box_max = box->getCorner(7);
     float axis_mid = ((box_max + box_min) / 2)[chosen_axis];
     for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx)
     {
@@ -206,16 +162,15 @@ Node *BVH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
             uint32_t triangle_idx_in_mesh_buffer = triangle_list[mesh_idx][triangle_idx];
             BoundingBox3f triangle_bbox = m_meshes[mesh_idx]->getBoundingBox(triangle_idx_in_mesh_buffer);
             Point3f prim_center = triangle_bbox.getCenter();
-            uint8_t switch_0_1=0;
+            uint8_t switch_0_1 = 0;
             if (prim_center[chosen_axis] < axis_mid)
                 switch_0_1 = 0;
             else
                 switch_0_1 = 1;
-            child_bbox_list[switch_0_1].expandBy(triangle_bbox);
+            child_bbox_list[switch_0_1]->expandBy(triangle_bbox);
             regional_division_triangle_list[switch_0_1][mesh_idx].push_back(triangle_idx_in_mesh_buffer);
         }
     }
-
     // Recursion build sub-tree
     for (size_t i = 0; i < m_Dim; ++i)
     {
@@ -224,7 +179,30 @@ Node *BVH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
     return node;
 }
 
-Node *SAH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *SAH::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+{
+    if (!BS)
+    {
+        std::cerr << "In Node *Octtree::build()" << std::endl;
+        std::cerr << "Input BoundingStructure* BS is NULL!" << std::endl;
+        return nullptr;
+    }
+    Node *result = nullptr;
+    if (typeid(BoundingBox3f) == typeid(*BS))
+    {
+        std::cout << "Using BoundingBox Accel Structure." << std::endl;
+        BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
+        result = SAH::build(box, triangle_list, depth);
+    }
+    else if (typeid(BoundingSphere) == typeid(*BS))
+    {
+        std::cout << "SAH does not support bounding spheres!" << std::endl;
+        result = nullptr;
+    }
+    return result;
+}
+
+Node *SAH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     /*
     For each axis: x, y, z:
@@ -245,9 +223,9 @@ Node *SAH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
         return nullptr;
     this->m_maxDepth = std::max(m_maxDepth, depth);
     Node *node = new Node(m_Dim);
-    node->bbox = box;
+    node->BS = node->bbox = box;
     node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
-    if (triangle_num < 30) // leaf node
+    if (triangle_num < 30)               // leaf node
     {
         node->is_leaf = true;
         ++this->m_leafNum;
@@ -257,7 +235,7 @@ Node *SAH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
     }
     ++this->m_innerNodeNum; // internal node
 
-    Point3f box_min = box.getCorner(0), box_max = box.getCorner(7);
+    Point3f box_min = box->getCorner(0), box_max = box->getCorner(7);
     Point3f bucket_min, bucket_max;
     Bucket *buckets[3][nBuckets];
     float SAH_sorce = std::numeric_limits<float>::infinity();
@@ -278,7 +256,7 @@ Node *SAH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
             std::vector<std::vector<uint32_t>> triangle_idx_list;
             for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx) // bucket initial every mesh has a triangle_idx vector
                 triangle_idx_list.push_back(std::vector<uint32_t>());
-            buckets[dim_idx][bucket_idx] = new Bucket(BoundingBox3f(), triangle_idx_list, (uint32_t)0);
+            buckets[dim_idx][bucket_idx] = new Bucket(new BoundingBox3f(), triangle_idx_list, (uint32_t)0);
         }
         for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx) // every dim travel all triangle, dim * prim_num
         {
@@ -290,7 +268,7 @@ Node *SAH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
                 float dim_center = prim_center[dim_idx];
                 uint16_t bucket_idx = floor((dim_center - dim_min) / (dim_max - dim_min) * nBuckets); // compute_bucket(centor) get the bucket which contain this triangle
                 bucket_idx = clamp(bucket_idx, 0, nBuckets - 1);
-                buckets[dim_idx][bucket_idx]->bbox.expandBy(triangle_bbox); // object based
+                buckets[dim_idx][bucket_idx]->bbox->expandBy(triangle_bbox);                                       // object based
                 buckets[dim_idx][bucket_idx]->triangle_idx_list[mesh_idx].push_back(triangle_idx_in_mesh_buffer); // triangle index in certain mesh buffer
                 ++buckets[dim_idx][bucket_idx]->prim_count;
             }
@@ -301,16 +279,16 @@ Node *SAH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
             uint32_t NA = 0, NB = 0;
             for (size_t i = 0; i < planes_idx; ++i) // left -> partitioning plane
             {
-                SA += buckets[dim_idx][i]->bbox.getSurfaceArea();
+                SA += buckets[dim_idx][i]->bbox->getSurfaceArea();
                 NA += buckets[dim_idx][i]->prim_count;
             }
             for (size_t j = planes_idx; j < nBuckets; ++j) // partitioning plane -> right
             {
-                SB += buckets[dim_idx][j]->bbox.getSurfaceArea();
+                SB += buckets[dim_idx][j]->bbox->getSurfaceArea();
                 NB += buckets[dim_idx][j]->prim_count;
             }
 
-            float cost = SAHTravCost + (SA * NA + SB * NB) / box.getSurfaceArea() * SAHInterCost;
+            float cost = SAHTravCost + (SA * NA + SB * NB) / box->getSurfaceArea() * SAHInterCost;
             if (std::isfinite(cost) && !std::isnan(cost) && SAH_sorce > cost)
             {
                 SAH_sorce = cost;
@@ -330,12 +308,14 @@ Node *SAH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
     }
 
     // Divide the current root node to get two child nodes, and the division obtained by comparing the cost value
-    BoundingBox3f child_bbox_list[m_Dim];
+    BoundingBox3f *child_bbox_list[m_Dim];
+    for (size_t i = 0; i < m_Dim; ++i)
+        child_bbox_list[i] = new BoundingBox3f();
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
     for (size_t plane = 0; plane < chosen_plane; ++plane)
-        child_bbox_list[0].expandBy(buckets[chosen_dim][plane]->bbox);
+        child_bbox_list[0]->expandBy(*buckets[chosen_dim][plane]->bbox);
     for (size_t plane = chosen_plane; plane < nBuckets; ++plane)
-        child_bbox_list[1].expandBy(buckets[chosen_dim][plane]->bbox);
+        child_bbox_list[1]->expandBy(*buckets[chosen_dim][plane]->bbox);
     for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx)
     {
         regional_division_triangle_list[0].push_back(std::vector<uint32_t>()); // every mesh one triangle vector
@@ -362,7 +342,30 @@ Node *SAH::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_
     return node;
 }
 
-Node *Octtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *Octtree::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+{
+    if (!BS)
+    {
+        std::cerr << "In Node *Octtree::build()" << std::endl;
+        std::cerr << "Input BoundingStructure* BS is NULL!" << std::endl;
+        return nullptr;
+    }
+    Node *result = nullptr;
+    if (typeid(BoundingBox3f) == typeid(*BS))
+    {
+        std::cout << "Using BoundingBox Accel Structure." << std::endl;
+        BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
+        result = Octtree::build(box, triangle_list, depth);
+    }
+    else if (typeid(BoundingSphere) == typeid(*BS))
+    {
+        std::cout << "Octtree does not support bounding spheres!" << std::endl;
+        result = nullptr;
+    }
+    return result;
+}
+
+Node *Octtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     if (!triangle_list.size())
         return nullptr;
@@ -370,12 +373,12 @@ Node *Octtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> trian
     this->m_maxDepth = std::max(m_maxDepth, depth);
 
     Node *node = new Node(m_Dim);
-    node->bbox = box;
+    node->BS = node->bbox = box;
     node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
     uint32_t triangle_num = 0;
     for (size_t i = 0; i < m_meshes.size(); ++i)
         triangle_num += triangle_list[i].size(); // total triangle number in this scene
-        
+
     if (triangle_num < 30) // leaf node
     {
         node->is_leaf = true;
@@ -391,9 +394,9 @@ Node *Octtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> trian
     {
         Point3f minPoint;
         Point3f maxPoint;
-        Point3f center = box.getCenter();
-        Point3f corner = box.getCorner(i);
-        minPoint = center.cwiseMin(corner); // The diagonal line can represent a cube, and the maximum and minimum points of each dimension 
+        Point3f center = box->getCenter();
+        Point3f corner = box->getCorner(i);
+        minPoint = center.cwiseMin(corner); // The diagonal line can represent a cube, and the maximum and minimum points of each dimension
         maxPoint = center.cwiseMax(corner); // are taken as the maximum and minimum endpoints of the cube.
         child_bbox_list[i] = new BoundingBox3f(minPoint, maxPoint);
     }
@@ -406,11 +409,11 @@ Node *Octtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> trian
         { // travel all meshes
             regional_division_triangle_list[i].push_back(std::vector<uint32_t>());
             for (size_t k = 0; k < node->triangle_list[j].size(); ++k)
-            { // travel all triangles from certain mesh
+            {                                                                                         // travel all triangles from certain mesh
                 BoundingBox3f triangle_bbox = m_meshes[j]->getBoundingBox(node->triangle_list[j][k]); // get current triangle's bounding box
-                if (child_bbox_list[i]->overlaps(triangle_bbox)) // if current triangle's bounding box in current regional division
-                {                                                        // if triangle overlaps sub-node i
-                    regional_division_triangle_list[i][j].push_back(node->triangle_list[j][k]); // add face_index to triangle_list
+                if (child_bbox_list[i]->overlaps(triangle_bbox))                                      // if current triangle's bounding box in current regional division
+                {                                                                                     // if triangle overlaps sub-node i
+                    regional_division_triangle_list[i][j].push_back(node->triangle_list[j][k]);       // add face_index to triangle_list
                 }
             }
         }
@@ -419,14 +422,35 @@ Node *Octtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> trian
     // Recursion build sub-tree
     for (size_t i = 0; i < m_Dim; ++i)
     {
-        node->child[i] = build(*child_bbox_list[i], regional_division_triangle_list[i], depth + 1);
-        delete child_bbox_list[i];
+        node->child[i] = build(child_bbox_list[i], regional_division_triangle_list[i], depth + 1);
     }
-
     return node;
 }
 
-Node *KDtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *KDtree::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+{
+    if (!BS)
+    {
+        std::cerr << "In Node *Octtree::build()" << std::endl;
+        std::cerr << "Input BoundingStructure* BS is NULL!" << std::endl;
+        return nullptr;
+    }
+    Node *result = nullptr;
+    if (typeid(BoundingBox3f) == typeid(*BS))
+    {
+        std::cout << "Using BoundingBox Accel Structure." << std::endl;
+        BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
+        result = KDtree::build(box, triangle_list, depth);
+    }
+    else if (typeid(BoundingSphere) == typeid(*BS))
+    {
+        std::cout << "KDtree does not support bounding spheres!" << std::endl;
+        result = nullptr;
+    }
+    return result;
+}
+
+Node *KDtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     if (!triangle_list.size())
         return nullptr;
@@ -434,12 +458,11 @@ Node *KDtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triang
     this->m_maxDepth = std::max(m_maxDepth, depth);
 
     Node *node = new Node(m_Dim);
-    node->bbox = box;
+    node->BS = node->bbox = box;
     node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
     uint32_t triangle_num = 0;
     for (size_t i = 0; i < m_meshes.size(); ++i)
         triangle_num += triangle_list[i].size(); // total triangle number in this scene
-        
     if (triangle_num < 30) // leaf node
     {
         node->is_leaf = true;
@@ -452,7 +475,7 @@ Node *KDtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triang
 
     BoundingBox3f *child_bbox_list[m_Dim];
     uint8_t chosen_axis = depth % 3; // Select the coordinate axis to be split in turn according to the depth
-    Point3f center = box.getCenter(), box_min = box.getCorner(0), box_max = box.getCorner(7);
+    Point3f center = box->getCenter(), box_min = box->getCorner(0), box_max = box->getCorner(7);
     Point3f child_box_min, child_box_max;
     child_box_min = box_min;
     child_box_min[chosen_axis] = center[chosen_axis];
@@ -460,7 +483,6 @@ Node *KDtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triang
     child_box_max[chosen_axis] = center[chosen_axis];
     child_bbox_list[0] = new BoundingBox3f(box_min, child_box_max); // box_min and box_min move along the positive direction of the corresponding axis to the corresponding distance from the midpoint
     child_bbox_list[1] = new BoundingBox3f(child_box_min, box_max); // box_min and box_min move along the negative direction of the corresponding axis to the corresponding distance from the midpoint
-
     // Traverse all triangles and divide the triangles into corresponding sub-bounding boxes according to their positions
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
     for (size_t i = 0; i < m_Dim; ++i)
@@ -469,35 +491,32 @@ Node *KDtree::build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triang
         { // travel all meshes
             regional_division_triangle_list[i].push_back(std::vector<uint32_t>());
             for (size_t k = 0; k < node->triangle_list[j].size(); ++k)
-            { // travel all triangles from certain mesh
+            {                                                                                         // travel all triangles from certain mesh
                 BoundingBox3f triangle_bbox = m_meshes[j]->getBoundingBox(node->triangle_list[j][k]); // get current triangle's bounding box
-                if (child_bbox_list[i]->overlaps(triangle_bbox)) // if current triangle's bounding box in current regional division
-                {                                                        // if triangle overlaps sub-node i
-                    regional_division_triangle_list[i][j].push_back(node->triangle_list[j][k]); // add face_index to triangle_list
+                if (child_bbox_list[i]->overlaps(triangle_bbox))                                      // if current triangle's bounding box in current regional division
+                {                                                                                     // if triangle overlaps sub-node i
+                    regional_division_triangle_list[i][j].push_back(node->triangle_list[j][k]);       // add face_index to triangle_list
                 }
             }
         }
     }
-
     // Recursion build sub-tree
     for (size_t i = 0; i < m_Dim; ++i)
     {
-        node->child[i] = build(*child_bbox_list[i], regional_division_triangle_list[i], depth + 1);
-        delete child_bbox_list[i];
+        node->child[i] = build(child_bbox_list[i], regional_division_triangle_list[i], depth + 1);
     }
-
+    
     return node;
 }
 
 bool Accel::travel(Node *treeNode, Ray3f &ray, Intersection &its, bool shadowRay, uint32_t &hitIdx) const
 {
-    if (!treeNode || !treeNode->bsphere.rayIntersect(ray)) // empty tree node or not hit any bounding box
+    if (!treeNode || !treeNode->BS->rayIntersect(ray)) // empty tree node or not hit any bounding box
         return false;
 
     bool is_hit = false;
     if (treeNode->is_leaf) // process leaf node
     {
-        // cout<<treeNode->bsphere.getVolume()<<endl;
         for (size_t i = 0; i < treeNode->triangle_list.size(); ++i)
         { // travel meshes
             for (size_t j = 0; j < treeNode->triangle_list[i].size(); j++)
@@ -520,23 +539,22 @@ bool Accel::travel(Node *treeNode, Ray3f &ray, Intersection &its, bool shadowRay
     }
     else // recursively process internal nodes
     {
+        // After sorting the enclosing structure, there is an intersection and jump out directly.
+        // Problems can arise when object-based division, of which
+        // bounding structure of different objects will overlap or even completely cover
 #if 1
         for (size_t i = 0; i < m_Dim; ++i)
         {
             is_hit |= travel(treeNode->child[i], ray, its, shadowRay, hitIdx);
         }
 #else
-        // After sorting the enclosing structure, there is an intersection and jump out directly.
-        // Problems can arise when object-based division, of which
-        // bounding structure of different objects will overlap or even completely cover
         std::pair<Node *, float> rank_list[m_Dim];
         for (size_t i = 0; i < m_Dim; ++i)
         {
             if (treeNode->child[i])
             {
                 rank_list[i].first = treeNode->child[i];
-                // rank_list[i].second = treeNode->child[i]->bbox.distanceTo(ray.o);
-                rank_list[i].second = treeNode->child[i]->bsphere.distanceTo(ray.o);
+                rank_list[i].second = treeNode->child[i]->BS->distanceTo(ray.o);
             }
         }
         std::sort(rank_list, rank_list + m_Dim, [](const auto &l, const auto &r)
@@ -578,11 +596,11 @@ bool Accel::rayIntersect(const Ray3f &ray_, Intersection &its, bool shadowRay) c
         bary << 1 - its.uv.sum(), its.uv;
 
         /* References to all relevant mesh buffers */
-        const Mesh   *mesh = its.mesh;
-        const MatrixXf &V  = mesh->getVertexPositions();
-        const MatrixXf &N  = mesh->getVertexNormals();
+        const Mesh *mesh = its.mesh;
+        const MatrixXf &V = mesh->getVertexPositions();
+        const MatrixXf &N = mesh->getVertexNormals();
         const MatrixXf &UV = mesh->getVertexTexCoords();
-        const MatrixXu &F  = mesh->getIndices();
+        const MatrixXu &F = mesh->getIndices();
 
         /* Vertex indices of the triangle */
         uint32_t idx0 = F(0, hitIdx), idx1 = F(1, hitIdx), idx2 = F(2, hitIdx);

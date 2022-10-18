@@ -10,6 +10,7 @@
 #include <nori/frame.h>
 #include <nori/bbox.h>
 #include <nori/bsphere.h>
+#include <nori/bstructure.h>
 #include <nori/dpdf.h>
 
 NORI_NAMESPACE_BEGIN
@@ -85,16 +86,17 @@ public:
     /// Return the surface area of the given triangle
     float surfaceArea(uint32_t index) const;
 
-    //// Return an axis-aligned bounding box of the entire mesh
-    const BoundingBox3f &getBoundingBox() const { return m_bbox; }
-    const BoundingSphere &getBoundingSphere() const { return m_bsphere; }
+    // Return an axis-aligned bounding box of the entire mesh
+    BoundingBox3f     *getBoundingBox()       const { return m_bbox; }
+    BoundingSphere    *getBoundingSphere()    const { return m_bsphere; }
+    BoundingStructure *getBoundingStructure() const { return m_BS; }
 
-    //// Return an axis-aligned bounding box containing the given triangle
-    BoundingBox3f getBoundingBox(uint32_t index) const;
-    BoundingSphere getBoundingSphere(uint32_t index) const;
-    // BoundingStructure getBoundingStructure(uint32_t index) const;
+    // Return an axis-aligned bounding box containing the given triangle
+    BoundingBox3f      getBoundingBox(uint32_t index)       const;
+    BoundingSphere     getBoundingSphere(uint32_t index)    const;
+    BoundingStructure *getBoundingStructure(uint32_t index) const;
 
-    //// Return the centroid of the given triangle
+    // Return the centroid of the given triangle
     Point3f getCentroid(uint32_t index) const;
 
     /** \brief Ray-triangle intersection test
@@ -175,11 +177,12 @@ protected:
     MatrixXf      m_N;                   ///< Vertex normals
     MatrixXf      m_UV;                  ///< Vertex texture coordinates
     MatrixXu      m_F;                   ///< Faces
-    BSDF         *m_bsdf = nullptr;      ///< BSDF of the surface
-    Emitter      *m_emitter = nullptr;   ///< Associated emitter, if any
-    BoundingBox3f m_bbox;                ///< Bounding box of the mesh
-    BoundingSphere m_bsphere;            ///< Bounding sphere of the mesh
-    DiscretePDF  *m_dpdf = nullptr;      ///< Discrete probability density
+    BSDF              *m_bsdf = nullptr;      ///< BSDF of the surface
+    Emitter           *m_emitter = nullptr;   ///< Associated emitter, if any
+    DiscretePDF       *m_dpdf = nullptr;      ///< Discrete probability density
+    BoundingBox3f     *m_bbox;           ///< Bounding box of the mesh
+    BoundingSphere    *m_bsphere;        ///< Bounding sphere of the mesh
+    BoundingStructure *m_BS;             ///< Bounding structure of the mesh
 }; 
 
 NORI_NAMESPACE_END

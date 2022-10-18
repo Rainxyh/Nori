@@ -12,11 +12,26 @@
 
 NORI_NAMESPACE_BEGIN
 
-Mesh::Mesh() { }
+Mesh::Mesh()
+{
+    m_bbox = new BoundingBox3f();
+    m_bsphere = new BoundingSphere(); // associated with Accel, initial in WavefrontOBJ
+#define Box 1
+#define Sphere 0
+#define SphereOrBox Box
+#if SphereOrBox
+    m_BS = dynamic_cast<BoundingBox3f *>(m_bbox);
+#else
+    m_BS = dynamic_cast<BoundingSphere *>(m_bsphere);
+#endif
+}
 
 Mesh::~Mesh() {
     delete m_bsdf;
     delete m_emitter;
+    delete m_bbox;
+    delete m_bsphere;
+    delete m_BS;
 }
 
 void Mesh::activate() {
@@ -128,6 +143,15 @@ BoundingSphere Mesh::getBoundingSphere(uint32_t index) const {
     BoundingSphere result(m_V.col(m_F(0, index)));
     result.expandBy(m_V.col(m_F(1, index)));
     result.expandBy(m_V.col(m_F(2, index)));
+    return result;
+}
+
+BoundingStructure *Mesh::getBoundingStructure(uint32_t index) const{
+    BoundingStructure *result = nullptr;
+    if (typeid(BoundingBox3f) == typeid(*this->m_BS))
+        result = dynamic_cast<BoundingBox3f *>(new BoundingBox3f(Mesh::getBoundingBox(index)));
+    else if (typeid(BoundingSphere) == typeid(*this->m_BS))
+        result = dynamic_cast<BoundingSphere *>(new BoundingSphere(Mesh::getBoundingSphere(index)));
     return result;
 }
 

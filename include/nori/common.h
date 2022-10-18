@@ -67,9 +67,9 @@ NORI_NAMESPACE_BEGIN
 template <typename Scalar, int Dimension>  struct TVector;
 template <typename Scalar, int Dimension>  struct TPoint;
 template <typename Point, typename Vector> struct TRay;
+template <typename Point>                  struct TBoundingStructure;
 template <typename Point>                  struct TBoundingBox;
 template <typename Point>                  struct TBoundingSphere;
-template <typename Point>                  struct TBoundingStructure;
 
 /* Basic Nori data structures (vectors, points, rays, bounding boxes,
    kd-trees) are oblivious to the underlying data type and dimension.
@@ -99,6 +99,7 @@ typedef TPoint<int, 1>          Point1i;
 typedef TPoint<int, 2>          Point2i;
 typedef TPoint<int, 3>          Point3i;
 typedef TPoint<int, 4>          Point4i;
+typedef TBoundingStructure<Point3f> BoundingStructure;
 typedef TBoundingBox<Point1f>   BoundingBox1f;
 typedef TBoundingBox<Point2f>   BoundingBox2f;
 typedef TBoundingBox<Point3f>   BoundingBox3f;

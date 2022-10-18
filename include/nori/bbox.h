@@ -7,6 +7,7 @@
 #pragma once
 
 #include <nori/ray.h>
+#include <nori/bstructure.h>
 
 NORI_NAMESPACE_BEGIN
 
@@ -27,7 +28,9 @@ NORI_NAMESPACE_BEGIN
  * \ingroup libcore
  */
 template <typename _PointType>
-struct TBoundingBox {
+struct TBoundingBox : TBoundingStructure<_PointType>
+// struct TBoundingBox
+{
     enum {
         Dimension = _PointType::Dimension
     };
@@ -35,6 +38,7 @@ struct TBoundingBox {
     typedef _PointType                             PointType;
     typedef typename PointType::Scalar             Scalar;
     typedef typename PointType::VectorType         VectorType;
+    typedef TBoundingStructure<PointType>          BS;
 
     /** 
      * \brief Create a new invalid bounding box
@@ -46,15 +50,20 @@ struct TBoundingBox {
     TBoundingBox() {
         reset();
     }
+    ~TBoundingBox() {}
 
     /// Create a collapsed bounding box from a single point
     TBoundingBox(const PointType &p) 
         : min(p), max(p) { }
-
     /// Create a bounding box from two positions
     TBoundingBox(const PointType &min, const PointType &max)
         : min(min), max(max) {
     }
+    // TBoundingBox &operator=(const TBoundingBox &bbox) {
+    //     this->min = bbox.min;
+    //     this->max = bbox.max;
+    //     return *this;
+    // }
 
     /// Test for equality against another bounding box
     bool operator==(const TBoundingBox &bbox) const {
@@ -66,17 +75,29 @@ struct TBoundingBox {
         return min != bbox.min || max != bbox.max;
     }
 
+    /**
+     * \brief Mark the bounding box as invalid.
+     *
+     * This operation sets the components of the minimum
+     * and maximum position to \f$\infty\f$ and \f$-\infty\f$,
+     * respectively.
+     */
+    void reset() {
+        min.setConstant( std::numeric_limits<Scalar>::infinity());
+        max.setConstant(-std::numeric_limits<Scalar>::infinity());
+    }
+
     /// Calculate the n-dimensional volume of the bounding box
     Scalar getVolume() const {
         return (max - min).prod();
     }
 
     /// Calculate the n-1 dimensional volume of the boundary
-    float getSurfaceArea() const {
+    Scalar getSurfaceArea() const {
         VectorType d = max - min;
-        float result = 0.0f;
+        Scalar result = 0.0f;
         for (int i=0; i<Dimension; ++i) {
-            float term = 1.0f;
+            Scalar term = 1.0f;
             for (int j=0; j<Dimension; ++j) {
                 if (i == j)
                     continue;
@@ -130,6 +151,10 @@ struct TBoundingBox {
                 && (bbox.max.array() <= max.array()).all();
         }
     }
+    bool contains(BS &_bbox, bool strict = false) const {
+        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
+        return contains(bbox, strict);
+    }
 
     /**
      * \brief Check two axis-aligned bounding boxes for possible overlap.
@@ -147,6 +172,10 @@ struct TBoundingBox {
             return (bbox.min.array() <= max.array()).all() 
                 && (bbox.max.array() >= min.array()).all();
         }
+    }
+    bool overlaps(BS &_bbox, bool strict = false) const {
+        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
+        return overlaps(bbox, strict);
     }
 
     /**
@@ -194,6 +223,10 @@ struct TBoundingBox {
 
         return result;
     }
+    Scalar squaredDistanceTo(BS &_bbox) const {
+        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
+        return squaredDistanceTo(bbox);
+    }
 
     /**
      * \brief Calculate the smallest distance between
@@ -201,6 +234,10 @@ struct TBoundingBox {
      */
     Scalar distanceTo(const TBoundingBox &bbox) const {
         return std::sqrt(squaredDistanceTo(bbox));
+    }
+    Scalar distanceTo(BS &_bbox) const {
+        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
+        return distanceTo(bbox);
     }
 
     /**
@@ -259,17 +296,9 @@ struct TBoundingBox {
         min = min.cwiseMax(bbox.min);
         max = max.cwiseMin(bbox.max);
     }
-
-    /** 
-     * \brief Mark the bounding box as invalid.
-     * 
-     * This operation sets the components of the minimum 
-     * and maximum position to \f$\infty\f$ and \f$-\infty\f$,
-     * respectively.
-     */
-    void reset() {
-        min.setConstant( std::numeric_limits<Scalar>::infinity());
-        max.setConstant(-std::numeric_limits<Scalar>::infinity());
+    void clip(BS &_bbox) {
+        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
+        clip(bbox);
     }
 
     /// Expand the bounding box to contain another point
@@ -284,6 +313,12 @@ struct TBoundingBox {
         max = max.cwiseMax(bbox.max);
     }
 
+    void expandBy(BS &_bbox)
+    {
+        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
+        expandBy(bbox);
+    }
+
     /// Merge two bounding boxes
     static TBoundingBox merge(const TBoundingBox &bbox1, const TBoundingBox &bbox2) {
         return TBoundingBox(
@@ -291,6 +326,11 @@ struct TBoundingBox {
             bbox1.max.cwiseMax(bbox2.max)
         );
     }
+    // BS* merge(BS &_bbox1, BS &_bbox2) {
+    //     TBoundingBox &bbox1 = dynamic_cast<TBoundingBox &>(_bbox1);
+    //     TBoundingBox &bbox2 = dynamic_cast<TBoundingBox &>(_bbox2);
+    //     return merge(bbox1, bbox2);
+    // }
 
     /// Merge bounding box list
     static TBoundingBox merge(const std::vector<TBoundingBox> &bbox_list) {
@@ -393,8 +433,7 @@ struct TBoundingBox {
     }
 
     PointType min; ///< Component-wise minimum 
-    PointType max; ///< Component-wise maximum 
+    PointType max; ///< Component-wise maximum
 };
-
 
 NORI_NAMESPACE_END

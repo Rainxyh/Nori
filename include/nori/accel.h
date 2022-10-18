@@ -20,12 +20,22 @@ NORI_NAMESPACE_BEGIN
 struct Node
 {
     Node(uint16_t dim) { child = (Node **)malloc(sizeof(Node *) * dim); }
+    ~Node()
+    {
+        delete[] child;
+        delete bbox;
+        delete bsphere;
+        delete BS;
+        triangle_list.clear();
+    }
     bool is_leaf = false;
     Node **child = {0};
     std::vector<std::vector<uint32_t>> triangle_list;
-    BoundingBox3f bbox;
-    BoundingSphere bsphere;
+    BoundingBox3f     *bbox    = nullptr; ///< Bounding box of the entire scene
+    BoundingSphere    *bsphere = nullptr; ///< Bounding sphere of the entire scene
+    BoundingStructure *BS      = nullptr; ///< Bounding structure of the entire scene
 };
+
 class Accel
 {
 public:
@@ -35,28 +45,43 @@ public:
      *
      * This function can only be used before \ref build() is called
      */
+    Accel()
+    {
+        m_bbox = new BoundingBox3f();
+        m_bsphere = new BoundingSphere();
+    }
     virtual ~Accel()
     {
         m_meshes.clear();
+        delete m_bbox;
+        delete m_bsphere;
         delete m_accelNode;
     }
-    void addMesh(Mesh *mesh)
+
+    void addMesh(Mesh *mesh) //called in void Scene::addChild(NoriObject *obj) of scene.cpp
     {
         m_meshes.push_back(mesh);
-        // m_bbox.expandBy(mesh->getBoundingBox());
-        m_bsphere.expandBy(mesh->getBoundingSphere());
+        m_bbox->expandBy(*(mesh->getBoundingBox()));       // associated with mesh
+        m_bsphere->expandBy(*(mesh->getBoundingSphere())); // associated with mesh
+        if (typeid(BoundingBox3f) == typeid(*mesh->getBoundingStructure()))
+            m_BS = dynamic_cast<BoundingBox3f *>(m_bbox);
+        else if (typeid(BoundingSphere) == typeid(*mesh->getBoundingStructure()))
+            m_BS = dynamic_cast<BoundingSphere *>(m_bsphere);
     }
+
     void setNode(Node *m_accelNode) { this->m_accelNode = m_accelNode; }
-    const Node *getNode() { return this->m_accelNode; }
-    uint32_t getTreeDepth() { return this->m_maxDepth; }
+    const Node *getNode()     { return this->m_accelNode; }
+    uint32_t getTreeDepth()   { return this->m_maxDepth; }
     uint32_t getTreeNodeNum() { return this->m_innerNodeNum; }
     uint32_t getTreeLeafNum() { return this->m_leafNum; }
 
     /// Build the acceleration data structure (currently a no-op)
     void build();
+
     /// Return an axis-aligned box that bounds the scene
-    const BoundingBox3f &getBoundingBox() const { return m_bbox; }
-    const BoundingSphere &getBoundingSphere() const { return m_bsphere; }
+    const BoundingBox3f     *getBoundingBox()       const { return m_bbox; }
+    const BoundingSphere    *getBoundingSphere()    const { return m_bsphere; }
+    const BoundingStructure *getBoundingStructure() const { return m_BS; }
 
     /**
      * \brief Intersect a ray against all triangles stored in the scene and
@@ -79,18 +104,19 @@ public:
      */
     virtual bool rayIntersect(const Ray3f &ray, Intersection &its, bool shadowRay) const;
     virtual bool travel(Node *treeNode, Ray3f &ray, Intersection &its, bool shadowRay, uint32_t &hitIdx) const;
-    virtual Node *build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) = 0;
-    virtual Node *build(BoundingSphere sphere, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) = 0;
-    // virtual Node *build(BoundingStructure struct, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) = 0;
+    virtual Node *build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) = 0;
+    virtual Node *build(BoundingSphere *sphere, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) { return nullptr; }
+    virtual Node *build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) { return nullptr; }
 
 protected:
-    std::vector<Mesh *> m_meshes; ///< Mesh (only a single one for now)
-    BoundingBox3f m_bbox;         ///< Bounding box of the entire scene
-    BoundingSphere m_bsphere;     ///< Bounding sphere of the entire scene
+    std::vector<Mesh *> m_meshes;            ///< Mesh (only a single one for now)
+    BoundingBox3f      *m_bbox    = nullptr; ///< Bounding box of the entire scene
+    BoundingSphere     *m_bsphere = nullptr; ///< Bounding sphere of the entire scene
+    BoundingStructure  *m_BS      = nullptr; ///< Bounding structure of the entire scene
     Node *m_accelNode;
     uint16_t m_Dim = 2;
-    uint32_t m_maxDepth = 0; // treeNode max depth
-    uint32_t m_leafNum = 0;  // treeNode max leaf
+    uint32_t m_maxDepth = 0;      // treeNode max depth
+    uint32_t m_leafNum = 0;       // treeNode max leaf
     uint32_t m_innerNodeNum = 0;  // treeNode max node
 };
 
@@ -98,22 +124,25 @@ class Octtree : public Accel
 {
 public:
     Octtree() { m_Dim = 8; }
-    Node *build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
+    Node *build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
+    Node *build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
 };
 
 class KDtree : public Accel
 {
 public:
     KDtree() { m_Dim = 2; }
-    Node *build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
+    Node *build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
+    Node *build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
 };
 
 class BVH : public Accel
 {
 public:
     BVH() { m_Dim = 2; }
-    Node *build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
-    Node *build(BoundingSphere box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth);
+    Node *build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
+    Node *build(BoundingSphere *sphere, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
+    Node *build(BoundingStructure* BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
 };
 
 class SAH : public Accel
@@ -130,15 +159,15 @@ C = C_trav + (S_A * N_A + S_B * N_B)/S_N * C_isect
 */
 public:
     SAH() { m_Dim = 2; }
-    // bool rayIntersect(const Ray3f &ray, Intersection &its, bool shadowRay) const override;
-    Node *build(BoundingBox3f box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
+    Node *build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
+    Node *build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth) override;
 
 private:
     struct Bucket
     {
-        Bucket(BoundingBox3f bbox, std::vector<std::vector<uint32_t>> triangle_idx_list, uint32_t prim_count) : bbox(bbox), triangle_idx_list(triangle_idx_list), prim_count(prim_count) {}
+        Bucket(BoundingBox3f *bbox, std::vector<std::vector<uint32_t>> triangle_idx_list, uint32_t prim_count) : bbox(bbox), triangle_idx_list(triangle_idx_list), prim_count(prim_count) {}
         virtual ~Bucket() { triangle_idx_list.clear(); }
-        BoundingBox3f bbox;
+        BoundingBox3f *bbox;
         std::vector<std::vector<uint32_t>> triangle_idx_list; // 1st dim mesh_idx, 2nd dim triangle_idx
         uint32_t prim_count;
     };

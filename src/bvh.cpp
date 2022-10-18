@@ -303,7 +303,7 @@ public:
 void BVH::addMesh(Mesh *mesh) {
     m_meshes.push_back(mesh);
     m_meshOffset.push_back(m_meshOffset.back() + mesh->getTriangleCount());
-    m_bbox.expandBy(mesh->getBoundingBox());
+    m_bbox.expandBy(*mesh->getBoundingBox());
 }
 
 void BVH::clear() {

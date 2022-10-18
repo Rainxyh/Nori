@@ -12,7 +12,7 @@ struct TBoundingStructure
     typedef typename PointType::VectorType VectorType;
 
 protected:
-    TBoundingStructure() {}
+    TBoundingStructure() {} // If an abstract class requires a constructor, it should be declared "protected".
 
 public:
     virtual ~TBoundingStructure() {}

@@ -18,7 +18,7 @@ Mesh::Mesh()
     m_bsphere = new BoundingSphere(); // associated with Accel, initial in WavefrontOBJ
 #define Box 1
 #define Sphere 0
-#define SphereOrBox Box
+#define SphereOrBox Sphere
 #if SphereOrBox
     m_BS = dynamic_cast<BoundingBox3f *>(m_bbox);
 #else

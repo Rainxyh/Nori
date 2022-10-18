@@ -39,13 +39,13 @@ Node *BVH::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> trian
     // BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
     if (typeid(BoundingBox3f) == typeid(*BS))
     {
-        std::cout << "Using BoundingBox Accel Structure." << std::endl;
+        std::cout << "Using BoundingBox Accel Structure (BVH)." << std::endl;
         BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
         result = BVH::build(box, triangle_list, depth);
     }
     else if (typeid(BoundingSphere) == typeid(*BS))
     {
-        std::cout << "Using BoundingSphere Accel Structure." << std::endl;
+        std::cout << "Using BoundingSphere Accel Structure (BVH)." << std::endl;
         BoundingSphere *sphere = dynamic_cast<BoundingSphere *>(BS);
         result = BVH::build(sphere, triangle_list, depth);
     }
@@ -59,13 +59,13 @@ Node *BVH::build(BoundingSphere *sphere, std::vector<std::vector<uint32_t>> tria
     uint32_t triangle_num = 0;
     for (size_t i = 0; i < triangle_list.size(); ++i)
         triangle_num += triangle_list[i].size(); // total triangle number in this scene
-    if (triangle_num == 0)
+    if (triangle_num == 0)                       // Prevent loops from building empty nodes
         return nullptr;
     this->m_maxDepth = std::max(m_maxDepth, depth);
     Node *node = new Node(m_Dim);
     node->BS = node->bsphere = sphere;
-    node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
-    if (triangle_num < 30)               // leaf node
+    node->triangle_list = triangle_list;                 // 1st dim meshes pre scene, 2nd dim triangles pre mesh
+    if (triangle_num < 30 || sphere->getVolume() < Epsilon * 100) // leaf node, sphere neen bigger epsilon to prevent unlimited loops
     {
         node->is_leaf = true;
         ++this->m_leafNum;
@@ -75,7 +75,7 @@ Node *BVH::build(BoundingSphere *sphere, std::vector<std::vector<uint32_t>> tria
     }
     ++this->m_innerNodeNum; // internal node
 
-    BoundingSphere* child_bsphere_list[m_Dim];
+    BoundingSphere *child_bsphere_list[m_Dim];
     for (size_t i = 0; i < m_Dim; ++i)
         child_bsphere_list[i] = new BoundingSphere();
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
@@ -117,7 +117,16 @@ Node *BVH::build(BoundingSphere *sphere, std::vector<std::vector<uint32_t>> tria
     // Recursion build sub-tree
     for (size_t i = 0; i < m_Dim; ++i)
     {
-        node->child[i] = build(child_bsphere_list[i], regional_division_triangle_list[i], depth + 1);
+        if (fabs(child_bsphere_list[i]->getVolume() - sphere->getVolume()) < Epsilon)
+        {
+            node->is_leaf = true;
+            ++this->m_leafNum;
+            for (size_t i = 0; i < m_Dim; ++i)
+                node->child[i] = nullptr;
+            return node;
+        }
+        else
+            node->child[i] = build(child_bsphere_list[i], regional_division_triangle_list[i], depth + 1);
     }
     return node;
 }
@@ -129,13 +138,13 @@ Node *BVH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
     uint32_t triangle_num = 0;
     for (size_t i = 0; i < triangle_list.size(); ++i)
         triangle_num += triangle_list[i].size(); // total triangle number in this scene
-    if (triangle_num == 0)
+    if (triangle_num == 0)                       // Prevent loops from building empty nodes
         return nullptr;
     this->m_maxDepth = std::max(m_maxDepth, depth);
     Node *node = new Node(m_Dim);
     node->BS = node->bbox = box;
-    node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
-    if (triangle_num < 30)               // leaf node
+    node->triangle_list = triangle_list;                 // 1st dim meshes pre scene, 2nd dim triangles pre mesh
+    if (triangle_num < 30 || box->getVolume() < Epsilon) // leaf node
     {
         node->is_leaf = true;
         ++this->m_leafNum;
@@ -183,14 +192,14 @@ Node *SAH::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> trian
 {
     if (!BS)
     {
-        std::cerr << "In Node *Octtree::build()" << std::endl;
+        std::cerr << "In Node *SAH::build()" << std::endl;
         std::cerr << "Input BoundingStructure* BS is NULL!" << std::endl;
         return nullptr;
     }
     Node *result = nullptr;
     if (typeid(BoundingBox3f) == typeid(*BS))
     {
-        std::cout << "Using BoundingBox Accel Structure." << std::endl;
+        std::cout << "Using BoundingBox Accel Structure (SAH)." << std::endl;
         BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
         result = SAH::build(box, triangle_list, depth);
     }
@@ -219,13 +228,13 @@ Node *SAH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
     uint32_t triangle_num = 0;
     for (size_t i = 0; i < triangle_list.size(); ++i)
         triangle_num += triangle_list[i].size(); // total triangle number in this scene
-    if (triangle_num == 0)
+    if (triangle_num == 0)                       // Prevent loops from building empty nodes
         return nullptr;
     this->m_maxDepth = std::max(m_maxDepth, depth);
     Node *node = new Node(m_Dim);
     node->BS = node->bbox = box;
-    node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
-    if (triangle_num < 30)               // leaf node
+    node->triangle_list = triangle_list;                 // 1st dim meshes pre scene, 2nd dim triangles pre mesh
+    if (triangle_num < 30 || box->getVolume() < Epsilon) // leaf node
     {
         node->is_leaf = true;
         ++this->m_leafNum;
@@ -234,7 +243,6 @@ Node *SAH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
         return node;
     }
     ++this->m_innerNodeNum; // internal node
-
     Point3f box_min = box->getCorner(0), box_max = box->getCorner(7);
     Point3f bucket_min, bucket_max;
     Bucket *buckets[3][nBuckets];
@@ -268,26 +276,33 @@ Node *SAH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
                 float dim_center = prim_center[dim_idx];
                 uint16_t bucket_idx = floor((dim_center - dim_min) / (dim_max - dim_min) * nBuckets); // compute_bucket(centor) get the bucket which contain this triangle
                 bucket_idx = clamp(bucket_idx, 0, nBuckets - 1);
-                buckets[dim_idx][bucket_idx]->bbox->expandBy(triangle_bbox);                                       // object based
+                buckets[dim_idx][bucket_idx]->bbox->expandBy(triangle_bbox);                                      // object space based, may lead to unlimited loops
                 buckets[dim_idx][bucket_idx]->triangle_idx_list[mesh_idx].push_back(triangle_idx_in_mesh_buffer); // triangle index in certain mesh buffer
                 ++buckets[dim_idx][bucket_idx]->prim_count;
             }
         }
         for (size_t planes_idx = 1; planes_idx < nBuckets; ++planes_idx)
         {
-            float SA = 0, SB = 0;
+            float SA = 0.f, SB = 0.f, surfacearea = 0.f;
             uint32_t NA = 0, NB = 0;
             for (size_t i = 0; i < planes_idx; ++i) // left -> partitioning plane
             {
-                SA += buckets[dim_idx][i]->bbox->getSurfaceArea();
-                NA += buckets[dim_idx][i]->prim_count;
+                surfacearea = buckets[dim_idx][i]->bbox->getSurfaceArea();
+                if (!std::isinf(surfacearea))
+                {
+                    SA += surfacearea;
+                    NA += buckets[dim_idx][i]->prim_count;
+                }
             }
             for (size_t j = planes_idx; j < nBuckets; ++j) // partitioning plane -> right
             {
-                SB += buckets[dim_idx][j]->bbox->getSurfaceArea();
-                NB += buckets[dim_idx][j]->prim_count;
+                surfacearea = buckets[dim_idx][j]->bbox->getSurfaceArea();
+                if (!std::isinf(surfacearea))
+                {
+                    SB += surfacearea;
+                    NB += buckets[dim_idx][j]->prim_count;
+                }
             }
-
             float cost = SAHTravCost + (SA * NA + SB * NB) / box->getSurfaceArea() * SAHInterCost;
             if (std::isfinite(cost) && !std::isnan(cost) && SAH_sorce > cost)
             {
@@ -298,7 +313,7 @@ Node *SAH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
         }
     }
 
-    if (chosen_plane == 0 || chosen_plane == nBuckets - 1) // Prevents multiple left-most or right-most cyclic divisions
+    if (chosen_plane == 0 || chosen_plane == nBuckets - 1) // Prevents multiple left-most or right-most cyclic divisions, still has bug lead to unlimited loop
     {
         node->is_leaf = true;
         ++this->m_leafNum;
@@ -333,6 +348,13 @@ Node *SAH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
                                                                 buckets[chosen_dim][plane]->triangle_idx_list[mesh_idx].end()); // push_back certain list to certain mesh
         }
     }
+    for (size_t dim = 0; dim < m_Dim; ++dim)
+    {
+        for (size_t plane = 0; plane < chosen_plane; ++plane)
+        {
+            delete buckets[dim][plane];
+        }
+    }
 
     // Recursion build sub-tree
     for (size_t i = 0; i < m_Dim; ++i)
@@ -353,7 +375,7 @@ Node *Octtree::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> t
     Node *result = nullptr;
     if (typeid(BoundingBox3f) == typeid(*BS))
     {
-        std::cout << "Using BoundingBox Accel Structure." << std::endl;
+        std::cout << "Using BoundingBox Accel Structure (Octtree)." << std::endl;
         BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
         result = Octtree::build(box, triangle_list, depth);
     }
@@ -369,17 +391,16 @@ Node *Octtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> tria
 {
     if (!triangle_list.size())
         return nullptr;
-
-    this->m_maxDepth = std::max(m_maxDepth, depth);
-
-    Node *node = new Node(m_Dim);
-    node->BS = node->bbox = box;
-    node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
     uint32_t triangle_num = 0;
     for (size_t i = 0; i < m_meshes.size(); ++i)
         triangle_num += triangle_list[i].size(); // total triangle number in this scene
-
-    if (triangle_num < 30) // leaf node
+    if (triangle_num == 0)                       // Prevent loops from building empty nodes
+        return nullptr;
+    this->m_maxDepth = std::max(m_maxDepth, depth);
+    Node *node = new Node(m_Dim);
+    node->BS = node->bbox = box;
+    node->triangle_list = triangle_list;                 // 1st dim meshes pre scene, 2nd dim triangles pre mesh
+    if (triangle_num < 30 || box->getVolume() < Epsilon) // leaf node
     {
         node->is_leaf = true;
         ++this->m_leafNum;
@@ -388,19 +409,15 @@ Node *Octtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> tria
         return node;
     }
     ++this->m_innerNodeNum; // internal node
-
     BoundingBox3f *child_bbox_list[m_Dim];
+    Point3f minPoint, maxPoint, center = box->getCenter();
     for (size_t i = 0; i < m_Dim; ++i) // 8 vertices and midpoints can be divided into 8 sub-bounding boxes
     {
-        Point3f minPoint;
-        Point3f maxPoint;
-        Point3f center = box->getCenter();
         Point3f corner = box->getCorner(i);
         minPoint = center.cwiseMin(corner); // The diagonal line can represent a cube, and the maximum and minimum points of each dimension
         maxPoint = center.cwiseMax(corner); // are taken as the maximum and minimum endpoints of the cube.
         child_bbox_list[i] = new BoundingBox3f(minPoint, maxPoint);
     }
-
     // Traverse all triangles and divide the triangles into corresponding sub-bounding boxes according to their positions
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
     for (size_t i = 0; i < m_Dim; ++i)
@@ -418,7 +435,6 @@ Node *Octtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> tria
             }
         }
     }
-
     // Recursion build sub-tree
     for (size_t i = 0; i < m_Dim; ++i)
     {
@@ -431,14 +447,14 @@ Node *KDtree::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> tr
 {
     if (!BS)
     {
-        std::cerr << "In Node *Octtree::build()" << std::endl;
+        std::cerr << "In Node *KDtree::build()" << std::endl;
         std::cerr << "Input BoundingStructure* BS is NULL!" << std::endl;
         return nullptr;
     }
     Node *result = nullptr;
     if (typeid(BoundingBox3f) == typeid(*BS))
     {
-        std::cout << "Using BoundingBox Accel Structure." << std::endl;
+        std::cout << "Using BoundingBox Accel Structure (KDtree)." << std::endl;
         BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
         result = KDtree::build(box, triangle_list, depth);
     }
@@ -454,16 +470,16 @@ Node *KDtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> trian
 {
     if (!triangle_list.size())
         return nullptr;
-
-    this->m_maxDepth = std::max(m_maxDepth, depth);
-
-    Node *node = new Node(m_Dim);
-    node->BS = node->bbox = box;
-    node->triangle_list = triangle_list; // 1st dim meshes pre scene, 2nd dim triangles pre mesh
     uint32_t triangle_num = 0;
     for (size_t i = 0; i < m_meshes.size(); ++i)
         triangle_num += triangle_list[i].size(); // total triangle number in this scene
-    if (triangle_num < 30) // leaf node
+    if (triangle_num == 0)                       // Prevent loops from building empty nodes
+        return nullptr;
+    this->m_maxDepth = std::max(m_maxDepth, depth);
+    Node *node = new Node(m_Dim);
+    node->BS = node->bbox = box;
+    node->triangle_list = triangle_list;                 // 1st dim meshes pre scene, 2nd dim triangles pre mesh
+    if (triangle_num < 30 || box->getVolume() < Epsilon) // leaf node
     {
         node->is_leaf = true;
         ++this->m_leafNum;
@@ -505,7 +521,7 @@ Node *KDtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> trian
     {
         node->child[i] = build(child_bbox_list[i], regional_division_triangle_list[i], depth + 1);
     }
-    
+
     return node;
 }
 

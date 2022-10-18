@@ -19,10 +19,20 @@ NORI_NAMESPACE_BEGIN
  */
 struct Node
 {
-    Node(uint16_t dim) { child = (Node **)malloc(sizeof(Node *) * dim); }
-    ~Node()
+    Node(uint16_t dim)
     {
-        delete[] child;
+        child = (Node **)malloc(sizeof(Node *) * dim);
+        for (size_t i = 0; i < dim; ++i)
+            child[i] = nullptr;
+    }
+    virtual ~Node()
+    {                   // The order in which the derived class calls the destructor:
+                        // the destructor of the derived class -> the destructor of the direct base class -> the destructor of the indirect base class
+                        // If there is no destructor in that part, it does not affect subsequent destructor calls
+                        // Unlike ordinary objects in the stack area, the pointer object in the heap area does not automatically execute the destructor by itself. 
+                        // Even if it runs to the end of the main function, the destructor of the pointer object will not be executed, and 
+                        // the destructor will only be triggered by using delete.
+        delete[] child; // cannot delete an automatically allocated array, delete is only used when paired with new.
         delete bbox;
         delete bsphere;
         delete BS;
@@ -61,19 +71,23 @@ public:
     void addMesh(Mesh *mesh) //called in void Scene::addChild(NoriObject *obj) of scene.cpp
     {
         m_meshes.push_back(mesh);
-        m_bbox->expandBy(*(mesh->getBoundingBox()));       // associated with mesh
-        m_bsphere->expandBy(*(mesh->getBoundingSphere())); // associated with mesh
         if (typeid(BoundingBox3f) == typeid(*mesh->getBoundingStructure()))
+        {
+            m_bbox->expandBy(*(mesh->getBoundingBox())); // associated with mesh
             m_BS = dynamic_cast<BoundingBox3f *>(m_bbox);
+        }
         else if (typeid(BoundingSphere) == typeid(*mesh->getBoundingStructure()))
+        {
+            m_bsphere->expandBy(*(mesh->getBoundingSphere())); // associated with mesh
             m_BS = dynamic_cast<BoundingSphere *>(m_bsphere);
+        }
     }
 
     void setNode(Node *m_accelNode) { this->m_accelNode = m_accelNode; }
-    const Node *getNode()     { return this->m_accelNode; }
-    uint32_t getTreeDepth()   { return this->m_maxDepth; }
-    uint32_t getTreeNodeNum() { return this->m_innerNodeNum; }
-    uint32_t getTreeLeafNum() { return this->m_leafNum; }
+    const Node *getNode()     const { return this->m_accelNode; }
+    uint32_t getTreeDepth()   const { return this->m_maxDepth; }
+    uint32_t getTreeNodeNum() const { return this->m_innerNodeNum; }
+    uint32_t getTreeLeafNum() const { return this->m_leafNum; }
 
     /// Build the acceleration data structure (currently a no-op)
     void build();
@@ -171,7 +185,7 @@ private:
         std::vector<std::vector<uint32_t>> triangle_idx_list; // 1st dim mesh_idx, 2nd dim triangle_idx
         uint32_t prim_count;
     };
-    const uint8_t nBuckets = 12;
+    const uint8_t nBuckets = 8;
     const float SAHTravCost = 0.125f;
     const int SAHInterCost = 1;
 };

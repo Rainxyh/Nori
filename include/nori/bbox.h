@@ -59,11 +59,12 @@ struct TBoundingBox : TBoundingStructure<_PointType>
     TBoundingBox(const PointType &min, const PointType &max)
         : min(min), max(max) {
     }
-    // TBoundingBox &operator=(const TBoundingBox &bbox) {
-    //     this->min = bbox.min;
-    //     this->max = bbox.max;
-    //     return *this;
-    // }
+
+    TBoundingBox &operator=(const TBoundingBox &bbox) {
+        this->min = bbox.min;
+        this->max = bbox.max;
+        return *this;
+    }
 
     /// Test for equality against another bounding box
     bool operator==(const TBoundingBox &bbox) const {
@@ -94,8 +95,8 @@ struct TBoundingBox : TBoundingStructure<_PointType>
 
     /// Calculate the n-1 dimensional volume of the boundary
     Scalar getSurfaceArea() const {
-        VectorType d = max - min;
         Scalar result = 0.0f;
+        VectorType d = max - min;
         for (int i=0; i<Dimension; ++i) {
             Scalar term = 1.0f;
             for (int j=0; j<Dimension; ++j) {
@@ -105,6 +106,8 @@ struct TBoundingBox : TBoundingStructure<_PointType>
             }
             result += term;
         }
+        if (std::isinf(result))
+            return (Scalar)0.f;
         return 2.0f * result;
     }
 

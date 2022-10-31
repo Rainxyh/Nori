@@ -55,6 +55,7 @@ add_executable(nori
   include/nori/emitter.h
   include/nori/frame.h
   include/nori/gui.h
+  include/nori/texture.h
   include/nori/integrator.h
   include/nori/mesh.h
   include/nori/object.h
@@ -64,6 +65,7 @@ add_executable(nori
   include/nori/rfilter.h
   include/nori/sampler.h
   include/nori/scene.h
+  include/nori/stb_image.h
   include/nori/timer.h
   include/nori/transform.h
   include/nori/vector.h
@@ -84,6 +86,7 @@ add_executable(nori
   src/independent.cpp
   src/main.cpp
   src/mesh.cpp
+  src/texture_image.cpp
   src/microfacet.cpp
   src/mirror.cpp
   src/normals.cpp

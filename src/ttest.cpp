@@ -53,12 +53,12 @@ public:
         /* This parameter specifies a list of incidence angles that will be tested */
         std::vector<std::string> angles = tokenize(propList.getString("angles", ""));
         for (auto angle : angles)
-            m_angles.push_back(toFloat(angle));
+            m_angles.push_back(StringtoFloat(angle));
 
         /* This parameter specifies a list of reference values, one for each angle */
         std::vector<std::string> references = tokenize(propList.getString("references", ""));
         for (auto angle : references)
-            m_references.push_back(toFloat(angle));
+            m_references.push_back(StringtoFloat(angle));
 
         /* Number of BSDF samples that should be generated (default: 100K) */
         m_sampleCount = propList.getInteger("sampleCount", 100000);

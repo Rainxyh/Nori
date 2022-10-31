@@ -5,13 +5,13 @@
 */
 
 #pragma once
-
 #include <nori/object.h>
 #include <nori/frame.h>
 #include <nori/bbox.h>
 #include <nori/bsphere.h>
 #include <nori/bstructure.h>
 #include <nori/dpdf.h>
+#include <nori/texture.h>
 
 NORI_NAMESPACE_BEGIN
 
@@ -36,6 +36,8 @@ struct Intersection {
     Frame geoFrame;
     /// Pointer to the associated mesh
     const Mesh *mesh;
+    
+    std::string mtlName;
 
     /// Create an uninitialized intersection record
     Intersection() : mesh(nullptr) { }
@@ -71,6 +73,8 @@ public:
     virtual void activate();
 
     void uniformSample(Sampler *sampler, Point3f &point, Normal3f &normal) const;
+
+    void uniformSample(Sampler *sampler, Point3f &point, Normal3f &normal, Point2f& texCoord) const;
 
     void uniformSample(Sampler* sampler, Point3f &point, Normal3f &normal, float &pdf) const;
 
@@ -138,6 +142,10 @@ public:
     /// Return a pointer to the triangle vertex index list
     const MatrixXu &getIndices() const { return m_F; }
 
+    const std::vector<std::string> &getFaceMtlMap() const { return face_idx_2_mtl_map; }
+
+    const NoriTexture *getTexture() const { return m_texture; }
+
     /// Is this mesh an area emitter?
     bool isEmitter() const { return m_emitter != nullptr; }
 
@@ -177,12 +185,14 @@ protected:
     MatrixXf      m_N;                   ///< Vertex normals
     MatrixXf      m_UV;                  ///< Vertex texture coordinates
     MatrixXu      m_F;                   ///< Faces
-    BSDF              *m_bsdf = nullptr;      ///< BSDF of the surface
-    Emitter           *m_emitter = nullptr;   ///< Associated emitter, if any
-    DiscretePDF       *m_dpdf = nullptr;      ///< Discrete probability density
-    BoundingBox3f     *m_bbox;           ///< Bounding box of the mesh
-    BoundingSphere    *m_bsphere;        ///< Bounding sphere of the mesh
-    BoundingStructure *m_BS;             ///< Bounding structure of the mesh
+    std::vector<std::string> face_idx_2_mtl_map;         ///< Faces
+    NoriTexture       *m_texture = nullptr;      ///< Texture of the mesh
+    BSDF              *m_bsdf    = nullptr;      ///< BSDF of the surface
+    Emitter           *m_emitter = nullptr;      ///< Associated emitter, if any
+    DiscretePDF       *m_dpdf    = nullptr;      ///< Discrete probability density
+    BoundingBox3f     *m_bbox;                   ///< Bounding box of the mesh
+    BoundingSphere    *m_bsphere;                ///< Bounding sphere of the mesh
+    BoundingStructure *m_BS;                     ///< Bounding structure of the mesh
 }; 
 
 NORI_NAMESPACE_END

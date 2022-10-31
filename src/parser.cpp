@@ -46,9 +46,10 @@ NoriObject *loadFromXML(const std::string &filename) {
         /* Object classes */
         EScene                = NoriObject::EScene,
         EMesh                 = NoriObject::EMesh,
+        ETexture              = NoriObject::ETexture,
         EBSDF                 = NoriObject::EBSDF,
         EPhaseFunction        = NoriObject::EPhaseFunction,
-        EEmitter            = NoriObject::EEmitter,
+        EEmitter              = NoriObject::EEmitter,
         EMedium               = NoriObject::EMedium,
         ECamera               = NoriObject::ECamera,
         EIntegrator           = NoriObject::EIntegrator,
@@ -78,8 +79,9 @@ NoriObject *loadFromXML(const std::string &filename) {
     std::map<std::string, ETag> tags;
     tags["scene"]      = EScene;
     tags["mesh"]       = EMesh;
+    tags["texture"]    = ETexture;
     tags["bsdf"]       = EBSDF;
-    tags["emitter"]  = EEmitter;
+    tags["emitter"]    = EEmitter;
     tags["camera"]     = ECamera;
     tags["medium"]     = EMedium;
     tags["phase"]      = EPhaseFunction;
@@ -164,7 +166,7 @@ NoriObject *loadFromXML(const std::string &filename) {
         PropertyList propList;
         std::vector<NoriObject *> children;
         for (pugi::xml_node &ch: node.children()) {
-            NoriObject *child = parseTag(ch, propList, tag);
+            NoriObject *child = parseTag(ch, propList, tag); // recursive processing sub-label
             if (child)
                 children.push_back(child);
         }
@@ -172,11 +174,11 @@ NoriObject *loadFromXML(const std::string &filename) {
         NoriObject *result = nullptr;
         try {
             if (currentIsObject) {
-                check_attributes(node, { "type" });
+                check_attributes(node, { "type" }); // <noriobject> labels only have <type> attribute
 
                 /* This is an object, first instantiate it */
                 result = NoriObjectFactory::createInstance(
-                    node.attribute("type").value(),
+                    node.attribute("type").value(), // get <type> attribute, which is a derived class corresponding to certain <noriobject>
                     propList
                 );
 
@@ -207,32 +209,32 @@ NoriObject *loadFromXML(const std::string &filename) {
                         break;
                     case EFloat: {
                             check_attributes(node, { "name", "value" });
-                            list.setFloat(node.attribute("name").value(), toFloat(node.attribute("value").value()));
+                            list.setFloat(node.attribute("name").value(), StringtoFloat(node.attribute("value").value()));
                         }
                         break;
                     case EInteger: {
                             check_attributes(node, { "name", "value" });
-                            list.setInteger(node.attribute("name").value(), toInt(node.attribute("value").value()));
+                            list.setInteger(node.attribute("name").value(), StringtoInt(node.attribute("value").value()));
                         }
                         break;
                     case EBoolean: {
                             check_attributes(node, { "name", "value" });
-                            list.setBoolean(node.attribute("name").value(), toBool(node.attribute("value").value()));
+                            list.setBoolean(node.attribute("name").value(), StringtoBool(node.attribute("value").value()));
                         }
                         break;
                     case EPoint: {
                             check_attributes(node, { "name", "value" });
-                            list.setPoint(node.attribute("name").value(), Point3f(toVector3f(node.attribute("value").value())));
+                            list.setPoint(node.attribute("name").value(), Point3f(StringtoVector3f(node.attribute("value").value())));
                         }
                         break;
                     case EVector: {
                             check_attributes(node, { "name", "value" });
-                            list.setVector(node.attribute("name").value(), Vector3f(toVector3f(node.attribute("value").value())));
+                            list.setVector(node.attribute("name").value(), Vector3f(StringtoVector3f(node.attribute("value").value())));
                         }
                         break;
                     case EColor: {
                             check_attributes(node, { "name", "value" });
-                            list.setColor(node.attribute("name").value(), Color3f(toVector3f(node.attribute("value").value()).array()));
+                            list.setColor(node.attribute("name").value(), Color3f(StringtoVector3f(node.attribute("value").value()).array()));
                         }
                         break;
                     case ETransform: {
@@ -242,7 +244,7 @@ NoriObject *loadFromXML(const std::string &filename) {
                         break;
                     case ETranslate: {
                             check_attributes(node, { "value" });
-                            Eigen::Vector3f v = toVector3f(node.attribute("value").value());
+                            Eigen::Vector3f v = StringtoVector3f(node.attribute("value").value());
                             transform = Eigen::Translation<float, 3>(v.x(), v.y(), v.z()) * transform;
                         }
                         break;
@@ -254,28 +256,28 @@ NoriObject *loadFromXML(const std::string &filename) {
                             Eigen::Matrix4f matrix;
                             for (int i=0; i<4; ++i)
                                 for (int j=0; j<4; ++j)
-                                    matrix(i, j) = toFloat(tokens[i*4+j]);
+                                    matrix(i, j) = StringtoFloat(tokens[i*4+j]);
                             transform = Eigen::Affine3f(matrix) * transform;
                         }
                         break;
                     case EScale: {
                             check_attributes(node, { "value" });
-                            Eigen::Vector3f v = toVector3f(node.attribute("value").value());
+                            Eigen::Vector3f v = StringtoVector3f(node.attribute("value").value());
                             transform = Eigen::DiagonalMatrix<float, 3>(v) * transform;
                         }
                         break;
                     case ERotate: {
                             check_attributes(node, { "angle", "axis" });
-                            float angle = degToRad(toFloat(node.attribute("angle").value()));
-                            Eigen::Vector3f axis = toVector3f(node.attribute("axis").value());
+                            float angle = degToRad(StringtoFloat(node.attribute("angle").value()));
+                            Eigen::Vector3f axis = StringtoVector3f(node.attribute("axis").value());
                             transform = Eigen::AngleAxis<float>(angle, axis) * transform;
                         }
                         break;
                     case ELookAt: {
                             check_attributes(node, { "origin", "target", "up" });
-                            Eigen::Vector3f origin = toVector3f(node.attribute("origin").value());
-                            Eigen::Vector3f target = toVector3f(node.attribute("target").value());
-                            Eigen::Vector3f up = toVector3f(node.attribute("up").value());
+                            Eigen::Vector3f origin = StringtoVector3f(node.attribute("origin").value());
+                            Eigen::Vector3f target = StringtoVector3f(node.attribute("target").value());
+                            Eigen::Vector3f up = StringtoVector3f(node.attribute("up").value());
 
                             Vector3f dir = (target - origin).normalized();
                             Vector3f left = up.normalized().cross(dir).normalized();

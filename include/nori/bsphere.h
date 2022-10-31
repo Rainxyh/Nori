@@ -24,18 +24,16 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
         : ori(ori) {}
     TBoundingSphere(const PointType &ori, const Scalar radius)
         : ori(ori), radius(radius) {}
-    TBoundingSphere(const TBoundingSphere &bsphere)
-        : ori(bsphere.ori), radius(bsphere.radius) {}
 
-    TBoundingSphere &operator=(const TBoundingSphere &bsphere) {
+    template <typename PointType>
+    TBoundingSphere &operator=(const TBoundingSphere<PointType> &bsphere){
         this->ori = bsphere.ori;
         this->radius = bsphere.radius;
         return *this;
     }
 
     /// Test for equality against another bounding sphere
-    bool operator==(const TBoundingSphere &bsphere) const
-    {
+    bool operator==(const TBoundingSphere &bsphere) const {
         return this->ori == bsphere.ori && this->radius == bsphere.radius;
     }
 
@@ -303,6 +301,19 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
 
     bool raySphereInsersect(const Ray3f &ray, float &t0, float &t1) const
     {
+        // Input(o, d, c, r)
+        // Return ({REJECT, INTERSECT}, t, p)
+        // l = c - o;
+        // s = l.dot(d);
+        // l2 = l.dot(l);
+        // if (s < 0 && l2 > r2) return (REJECT, 0, 0);
+        // m2 = l2 - s2;
+        // if (m2 > r2) return (REJECT, 0, 0);
+        // q = sqrt(r2 - m2);
+        // if (l2 > r2) t = s - q;
+        // else t = s + q;
+        // return (INTERSECT, t, o + td);
+
         Scalar radius2 = this->radius * this->radius;
         Vector3f OC = this->ori - ray.o;
 #if 0

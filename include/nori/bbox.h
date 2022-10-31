@@ -60,7 +60,8 @@ struct TBoundingBox : TBoundingStructure<_PointType>
         : min(min), max(max) {
     }
 
-    TBoundingBox &operator=(const TBoundingBox &bbox) {
+    template <typename PointType>
+    TBoundingBox &operator=(const TBoundingBox<PointType> &bbox){
         this->min = bbox.min;
         this->max = bbox.max;
         return *this;

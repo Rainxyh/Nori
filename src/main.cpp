@@ -161,20 +161,18 @@ int main(int argc, char **argv) {
     std::string sceneName = "";
     std::string exrName = "";
 
-    for (int i = 1; i < argc; ++i) {
+    for (int i = 1; i < argc; ++i) { // travel parameter list
         std::string token(argv[i]);
         if (token == "-t" || token == "--threads") {
-            if (i+1 >= argc) {
-                cerr << "\"--threads\" argument expects a positive integer following it." << endl;
+            if (i+1 >= argc) { // if missing thread count
+                cerr << "\"--threads\" argument need a integer following it." << endl;
                 return -1;
             }
-            threadCount = atoi(argv[i+1]);
-            ++i;
+            threadCount = atoi(argv[++i]);
             if (threadCount <= 0) {
                 cerr << "\"--threads\" argument expects a positive integer following it." << endl;
                 return -1;
             }
-
             continue;
         }
         else if (token == "--no-gui") {
@@ -182,17 +180,16 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        filesystem::path path(argv[i]);
+        filesystem::path path(argv[i]); // <scene.xml>
 
         try {
-            if (path.extension() == "xml") {
+            if (path.extension() == "xml") { // .xml file
                 sceneName = argv[i];
-
                 /* Add the parent directory of the scene file to the
                    file resolver. That way, the XML file can reference
                    resources (OBJ files, textures) using relative paths */
                 getFileResolver()->prepend(path.parent_path());
-            } else if (path.extension() == "exr") {
+            } else if (path.extension() == "exr") { // .exr file
                 /* Alternatively, provide a basic OpenEXR image viewer */
                 exrName = argv[i];
             } else {
@@ -213,7 +210,7 @@ int main(int argc, char **argv) {
         cerr << "Please provide the path to a .xml (or .exr) file." << endl;
         return -1;
     }
-    else if (exrName != "") {
+    else if (exrName != "") { // show exr image
         if (!gui) {
             cerr << "Flag --no-gui was set. Please remove it to display the EXR file." << endl;
             return -1;
@@ -232,7 +229,7 @@ int main(int argc, char **argv) {
             return -1;
         }
     }
-    else { // sceneName != ""
+    else if(sceneName != ""){ // load .xml file
         if (threadCount < 0) {
             threadCount = tbb::task_scheduler_init::automatic;
         }

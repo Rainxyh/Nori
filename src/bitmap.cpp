@@ -30,7 +30,7 @@ Bitmap::Bitmap(const std::string &filename) {
 
     const char *ch_r = nullptr, *ch_g = nullptr, *ch_b = nullptr;
     for (Imf::ChannelList::ConstIterator it = channels.begin(); it != channels.end(); ++it) {
-        std::string name = toLower(it.name());
+        std::string name = StringtoLower(it.name());
 
         if (it.channel().xSampling != 1 || it.channel().ySampling != 1) {
             /* Sub-sampled layers are not supported */

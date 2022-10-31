@@ -11,7 +11,7 @@ NORI_NAMESPACE_BEGIN
 Scene::Scene(const PropertyList &)
 {
     // m_accel = new Accel();
-    m_accel = new BVH();     // bunny [depth 9, innodes 103, leaves 104]  19ms, ajax [depth 23, innodes 29663, leaves 29663]  502ms
+    m_accel = new BVH(); // bunny [depth 9, innodes 103, leaves 104]  19ms, ajax [depth 23, innodes 29663, leaves 29663]  502ms
     // m_accel = new KDtree();  // bunny [depth 12, innodes 268, leaves 269] 22ms, ajax [depth 28, innodes 85162, leaves 85163]  943ms
     // m_accel = new Octtree(); // bunny [depth 4, innodes 89, leaves 624]   24ms, ajax [depth 10, innodes 28285, leaves 197996] 903ms
     // m_accel = new SAH();     // bunny [depth 7, innodes 71, leaves 44]    24ms, ajax [depth 17, innodes 20410, leaves 12216] 1.52s
@@ -58,8 +58,8 @@ void Scene::buildAccelStructure()
     }
     else
     {
-        std::cout << tfm::format("Accel structure build successfully! [depth %d, innodes %d, leaves %d]", m_accel->getTreeDepth(), m_accel->getTreeNodeNum(), m_accel->getTreeLeafNum()) << std::endl;
         auto end = std::chrono::high_resolution_clock::now();
+        std::cout << tfm::format("Accel structure build successfully! [depth %d, innodes %d, leaves %d]", m_accel->getTreeDepth(), m_accel->getTreeNodeNum(), m_accel->getTreeLeafNum()) << std::endl;
         std::cout << "Accel structure build time:" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms\n";
     }
 }
@@ -68,7 +68,7 @@ void Scene::buildAccelStructure()
 void Scene::activate()
 {
     Scene::buildAccelStructure();
-    
+
     if (!m_integrator)
         throw NoriException("No integrator was specified!");
     if (!m_camera)
@@ -106,7 +106,7 @@ void Scene::addChild(NoriObject *obj)
         m_emitters.push_back(emitter);
         break;
     }
-    
+
     case ESampler:
         if (m_sampler)
             throw NoriException("There can only be one sampler per scene!");

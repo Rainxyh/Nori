@@ -25,7 +25,7 @@ public:
 
         std::ifstream is(filename.str());
         if (is.fail())
-            throw NoriException("Unable to open OBJ file \"%s\"!", filename);
+            throw NoriException("Unable to open OBJ file \"%s\"! (Check if file exists.)", filename);
         Transform trafo = propList.getTransform("toWorld", Transform());
 
         cout << "Loading \"" << filename << "\" .. ";
@@ -38,6 +38,7 @@ public:
         std::vector<uint32_t>   indices;
         std::vector<OBJVertex>  vertices;
         VertexMap vertexMap;
+        std::string usemtl_pointer;
 
         std::string line_str;
         while (std::getline(is, line_str)) {
@@ -46,7 +47,7 @@ public:
             std::string prefix;
             line >> prefix;
 
-            if (prefix == "v") {
+            if (prefix == "v") { // point
                 Point3f p;
                 line >> p.x() >> p.y() >> p.z();
                 p = trafo * p;
@@ -55,15 +56,15 @@ public:
                 else if (typeid(BoundingSphere) == typeid(*m_BS))
                     m_bsphere->expandBy(p);
                 positions.push_back(p);
-            } else if (prefix == "vt") {
+            } else if (prefix == "vt") { // texture coord
                 Point2f tc;
                 line >> tc.x() >> tc.y();
                 texcoords.push_back(tc);
-            } else if (prefix == "vn") {
+            } else if (prefix == "vn") { // normal
                 Normal3f n;
                 line >> n.x() >> n.y() >> n.z();
                 normals.push_back((trafo * n).normalized());
-            } else if (prefix == "f") {
+            } else if (prefix == "f") { // face
                 std::string v1, v2, v3, v4;
                 line >> v1 >> v2 >> v3 >> v4;
                 OBJVertex verts[6];
@@ -79,24 +80,30 @@ public:
                     verts[4] = verts[0];
                     verts[5] = verts[2];
                     nVertices = 6;
+                    face_idx_2_mtl_map.push_back(usemtl_pointer); // map face index to certain material library file
                 }
                 /* Convert to an indexed vertex list */
                 for (int i=0; i<nVertices; ++i) {
                     const OBJVertex &v = verts[i];
                     VertexMap::const_iterator it = vertexMap.find(v);
-                    if (it == vertexMap.end()) {
+                    if (it == vertexMap.end()) { // new vectex
                         vertexMap[v] = (uint32_t) vertices.size();
-                        indices.push_back((uint32_t) vertices.size());
-                        vertices.push_back(v);
-                    } else {
+                        indices.push_back((uint32_t) vertices.size()); // currrent vertex's index in collection
+                        vertices.push_back(v); // build vectex collection
+                    } else { // vectex has been pushed in vertices
                         indices.push_back(it->second);
                     }
                 }
+                face_idx_2_mtl_map.push_back(usemtl_pointer); // map face index to certain material library file
+            } else if (prefix == "mtllib"){ // material library file
+                std::string mtl_file_name;
+                line >> mtl_file_name;
+            } else if (prefix == "usemtl"){ // map certain mtl
+                line >> usemtl_pointer;
             }
         }
-
-        m_F.resize(3, indices.size()/3);
-        memcpy(m_F.data(), indices.data(), sizeof(uint32_t)*indices.size());
+        m_F.resize(3, indices.size() / 3);
+        memcpy(m_F.data(), indices.data(), sizeof(uint32_t) * indices.size());
 
         m_V.resize(3, vertices.size());
         for (uint32_t i=0; i<vertices.size(); ++i)
@@ -137,13 +144,13 @@ protected:
             if (tokens.size() < 1 || tokens.size() > 3)
                 throw NoriException("Invalid vertex data: \"%s\"", string);
 
-            p = toUInt(tokens[0]);
+            p = StringtoUInt(tokens[0]);
 
             if (tokens.size() >= 2 && !tokens[1].empty())
-                uv = toUInt(tokens[1]);
+                uv = StringtoUInt(tokens[1]);
 
             if (tokens.size() >= 3 && !tokens[2].empty())
-                n = toUInt(tokens[2]);
+                n = StringtoUInt(tokens[2]);
         }
 
         inline bool operator==(const OBJVertex &v) const {

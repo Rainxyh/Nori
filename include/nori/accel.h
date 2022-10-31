@@ -19,10 +19,10 @@ NORI_NAMESPACE_BEGIN
  */
 struct Node
 {
-    Node(uint16_t dim)
+    Node(uint16_t dim) : dim(dim)
     {
-        child = (Node **)malloc(sizeof(Node *) * dim);
-        for (size_t i = 0; i < dim; ++i)
+        child = (Node **)malloc(sizeof(Node *) * this->dim);
+        for (size_t i = 0; i < this->dim; ++i)
             child[i] = nullptr;
     }
     virtual ~Node()
@@ -35,11 +35,23 @@ struct Node
         delete[] child; // cannot delete an automatically allocated array, delete is only used when paired with new.
         delete bbox;
         delete bsphere;
-        delete BS;
         triangle_list.clear();
+    }
+    Node(const Node &node)
+    {
+        // no need to check if node is nullptr, there is no empty reference
+        this->~Node();
+        this->is_leaf = node.is_leaf;
+        this->child = new Node *[this->dim]; // Deep copy construction of multiple pointers
+        for(size_t i =0;i<this->dim;++i)
+            this->child[i] = new Node(*node.child[i]);
+        this->triangle_list = node.triangle_list;
+        this->bbox = new BoundingBox3f(*node.bbox);
+        this->bsphere = new BoundingSphere(*node.bsphere);
     }
     bool is_leaf = false;
     Node **child = {0};
+    u_int16_t dim = 0;
     std::vector<std::vector<uint32_t>> triangle_list;
     BoundingBox3f     *bbox    = nullptr; ///< Bounding box of the entire scene
     BoundingSphere    *bsphere = nullptr; ///< Bounding sphere of the entire scene

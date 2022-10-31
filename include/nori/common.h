@@ -40,12 +40,12 @@
 /* A few useful constants */
 #undef M_PI
 
-#define TT1 std::cout<<"TEST1"<<std::endl;
-#define TT2 std::cout<<"TEST2"<<std::endl;
-#define TT3 std::cout<<"TEST3"<<std::endl;
-#define TT4 std::cout<<"TEST4"<<std::endl;
-#define TT5 std::cout<<"TEST5"<<std::endl;
-#define TT6 std::cout<<"TEST6"<<std::endl;
+#define TT1 std::cout << "TEST1" << std::endl;
+#define TT2 std::cout << "TEST2" << std::endl;
+#define TT3 std::cout << "TEST3" << std::endl;
+#define TT4 std::cout << "TEST4" << std::endl;
+#define TT5 std::cout << "TEST5" << std::endl;
+#define TT6 std::cout << "TEST6" << std::endl;
 
 #define M_PI         3.14159265358979323846f
 #define INV_PI       0.31830988618379067154f
@@ -125,6 +125,7 @@ class ImageBlock;
 class Integrator;
 class Emitter;
 class Mesh;
+class NoriTexture;
 class NoriObject;
 class NoriObjectFactory;
 class NoriScreen;
@@ -158,22 +159,22 @@ extern int getCoreCount();
 extern std::string indent(const std::string &string, int amount = 2);
 
 /// Convert a string to lower case
-extern std::string toLower(const std::string &value);
+extern std::string StringtoLower(const std::string &value);
 
 /// Convert a string into an boolean value
-extern bool toBool(const std::string &str);
+extern bool StringtoBool(const std::string &str);
 
 /// Convert a string into a signed integer value
-extern int toInt(const std::string &str);
+extern int StringtoInt(const std::string &str);
 
 /// Convert a string into an unsigned integer value
-extern unsigned int toUInt(const std::string &str);
+extern unsigned int StringtoUInt(const std::string &str);
 
 /// Convert a string into a floating point value
-extern float toFloat(const std::string &str);
+extern float StringtoFloat(const std::string &str);
 
 /// Convert a string into a 3D vector
-extern Eigen::Vector3f toVector3f(const std::string &str);
+extern Eigen::Vector3f StringtoVector3f(const std::string &str);
 
 /// Tokenize a string into a list by splitting at 'delim'
 extern std::vector<std::string> tokenize(const std::string &s, const std::string &delim = ", ", bool includeEmpty = false);

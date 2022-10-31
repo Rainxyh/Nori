@@ -27,12 +27,16 @@ public:
         if (!scene->rayIntersect(ray, its))
             return Color3f(0.0f);
 
-        Color3f Le(0.f), Lr(0.f), Lo(0.f);
+        Color3f Le(0.f), Lr(0.f), Lo(0.f), tex_color(1.f);
         Normal3f Nx = its.shFrame.n, Ny;
         if (its.mesh->isEmitter())
         {
-            if(Nx.dot(-ray.d)){
+            if (Nx.dot(-ray.d))
+            {
                 Le = its.mesh->getEmitter()->getRadiance(); // self-luminous
+                if (its.mesh->getTexture())
+                    tex_color = its.mesh->getTexture()->getValue(its.mtlName, its.uv);
+                Le *= tex_color;
             }
         }
 
@@ -51,11 +55,14 @@ public:
             if (scene->rayIntersect(Ray3f(x, wi, Epsilon, (y - x).norm() - Epsilon), its)) // if no Epsilon, ceiling will be full black. because x in emitter space, but whitted doesn't consider indirect lighting so it is no matter in this example
                 if (!its.mesh->isEmitter())
                     V = 0.f;
-
+            
             G = V * fabs(Nx.dot(wi)) * fabs(Ny.dot(-wi)) / (y - x).squaredNorm();
             Lr = fr * G * Lr / scene->getEmitterPdf() / RR;
+            if (its.mesh->getTexture())
+                tex_color = its.mesh->getTexture()->getValue(its.mtlName, its.uv);
+            Lr *= tex_color;
             Lo = Le + Lr;
-            return Lo;
+            return Lo ;
         }
         else // dielectric or mirror
         {

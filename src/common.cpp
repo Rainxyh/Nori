@@ -48,15 +48,15 @@ bool endsWith(const std::string &value, const std::string &ending) {
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
-std::string toLower(const std::string &value) {
+std::string StringtoLower(const std::string &value) {
     std::string result;
     result.resize(value.size());
     std::transform(value.begin(), value.end(), result.begin(), ::tolower);
     return result;
 }
 
-bool toBool(const std::string &str) {
-    std::string value = toLower(str);
+bool StringtoBool(const std::string &str) {
+    std::string value = StringtoLower(str);
     if (value == "false")
         return false;
     else if (value == "true")
@@ -65,7 +65,7 @@ bool toBool(const std::string &str) {
         throw NoriException("Could not parse boolean value \"%s\"", str);
 }
 
-int toInt(const std::string &str) {
+int StringtoInt(const std::string &str) {
     char *end_ptr = nullptr;
     int result = (int) strtol(str.c_str(), &end_ptr, 10);
     if (*end_ptr != '\0')
@@ -73,7 +73,7 @@ int toInt(const std::string &str) {
     return result;
 }
 
-unsigned int toUInt(const std::string &str) {
+unsigned int StringtoUInt(const std::string &str) {
     char *end_ptr = nullptr;
     unsigned int result = (int) strtoul(str.c_str(), &end_ptr, 10);
     if (*end_ptr != '\0')
@@ -81,7 +81,7 @@ unsigned int toUInt(const std::string &str) {
     return result;
 }
 
-float toFloat(const std::string &str) {
+float StringtoFloat(const std::string &str) {
     char *end_ptr = nullptr;
     float result = (float) strtof(str.c_str(), &end_ptr);
     if (*end_ptr != '\0')
@@ -89,13 +89,13 @@ float toFloat(const std::string &str) {
     return result;
 }
 
-Eigen::Vector3f toVector3f(const std::string &str) {
+Eigen::Vector3f StringtoVector3f(const std::string &str) {
     std::vector<std::string> tokens = tokenize(str);
     if (tokens.size() != 3)
         throw NoriException("Expected 3 values");
     Eigen::Vector3f result;
     for (int i=0; i<3; ++i)
-        result[i] = toFloat(tokens[i]);
+        result[i] = StringtoFloat(tokens[i]);
     return result;
 }
 
@@ -273,7 +273,6 @@ float fresnel(float cosThetaI, float extIOR, float intIOR) {
     /* Using Snell's law, calculate the squared sine of the
        angle between the normal and the transmitted ray */
     float eta = etaI / etaT,
-          sinThetaI = sqrt(1.f - pow(cosThetaI, 2)),
           sinThetaTSqr = eta * eta * (1 - cosThetaI * cosThetaI),
           cosThetaT = std::sqrt(1.0f - sinThetaTSqr);
 

@@ -7,7 +7,6 @@
 #pragma once
 
 #include <nori/proplist.h>
-
 NORI_NAMESPACE_BEGIN
 
 /**
@@ -21,6 +20,7 @@ public:
     enum EClassType {
         EScene = 0,
         EMesh,
+        ETexture,
         EBSDF,
         EPhaseFunction,
         EEmitter,
@@ -80,6 +80,7 @@ public:
         switch (type) {
             case EScene:      return "scene";
             case EMesh:       return "mesh";
+            case ETexture:    return "texture";
             case EBSDF:       return "bsdf";
             case EEmitter:    return "emitter";
             case ECamera:     return "camera";
@@ -138,14 +139,17 @@ private:
 };
 
 /// Macro for registering an object constructor with the \ref NoriObjectFactory
-#define NORI_REGISTER_CLASS(cls, name) \
-    cls *cls ##_create(const PropertyList &list) { \
-        return new cls(list); \
-    } \
-    static struct cls ##_{ \
-        cls ##_() { \
-            NoriObjectFactory::registerClass(name, cls ##_create); \
-        } \
-    } cls ##__NORI_;
+#define NORI_REGISTER_CLASS(cls, name)                            \
+    cls *cls##_create(const PropertyList &list)                   \
+    {                                                             \
+        return new cls(list);                                     \
+    }                                                             \
+    static struct cls##_                                          \
+    {                                                             \
+        cls##_()                                                  \
+        {                                                         \
+            NoriObjectFactory::registerClass(name, cls##_create); \
+        }                                                         \
+    } cls##__NORI_;
 
 NORI_NAMESPACE_END

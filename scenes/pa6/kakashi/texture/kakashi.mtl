@@ -1,0 +1,8 @@
+newmtl badan
+	map_Kd badan.png
+newmtl mata
+	map_Kd mata.png
+newmtl sharingan
+	map_Kd sharingan.png
+newmtl tangan
+	map_Kd tangan.png

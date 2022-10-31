@@ -1,0 +1,56 @@
+<scene>
+	<!-- Independent sample generator, 64 samples per pixel -->
+	<sampler type="independent">
+		<integer name="sampleCount" value="64"/>
+	</sampler>
+
+	<!-- Use the simple point light integrator -->
+    <integrator type="whitted"/>
+
+	<!-- Load the Ajax bust (a freely available scan from the Jotero forum) -->
+	<mesh type="obj">
+		<string name="filename" value="luminaris.obj"/>
+		
+		<bsdf type="microfacet">
+		    <float name="intIOR" value="1.7"/>
+		    <color name="kd" value="0.2 0.2 0.4"/>
+		    <float name="alpha" value="0.28"/>
+		</bsdf>
+		<texture type="texImage">
+			<string name="mtl" value="./texture/luminaris.mtl"/>
+		</texture>
+	</mesh>
+
+    <!-- Area light source -->
+	<mesh type="obj">
+		<string name="filename" value="light_front.obj"/>
+
+		<emitter type="area">
+            		<color name="radiance" value="40 40 40"/>
+		</emitter>
+	</mesh>
+	<mesh type="obj">
+		<string name="filename" value="light_top.obj"/>
+
+		<emitter type="area">
+            		<color name="radiance" value="10 10 10"/>
+		</emitter>
+	</mesh>
+
+	<!-- Render the scene viewed by a perspective camera -->
+	<camera type="perspective">
+        <!-- 3D origin, target point, and 'up' vector -->
+		<transform name="toWorld">
+            <lookat target="0,0,0"
+                    origin="100,-100,100"
+                    up="-1,0,0"/>
+		</transform>
+
+		<!-- Field of view: 30 degrees -->
+		<float name="fov" value="30"/>
+
+		<!-- 768 x 768 pixels -->
+		<integer name="width" value="768"/>
+		<integer name="height" value="768"/>
+	</camera>
+</scene>

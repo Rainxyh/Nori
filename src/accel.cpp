@@ -65,7 +65,7 @@ Node *BVH::build(BoundingSphere *sphere, std::vector<std::vector<uint32_t>> tria
     Node *node = new Node(m_Dim);
     node->BS = node->bsphere = sphere;
     node->triangle_list = triangle_list;                 // 1st dim meshes pre scene, 2nd dim triangles pre mesh
-    if (triangle_num < 30 || sphere->getVolume() < Epsilon * 100) // leaf node, sphere neen bigger epsilon to prevent unlimited loops
+    if (triangle_num < 30) // leaf node, sphere neen bigger epsilon to prevent unlimited loops
     {
         node->is_leaf = true;
         ++this->m_leafNum;
@@ -615,8 +615,9 @@ bool Accel::rayIntersect(const Ray3f &ray_, Intersection &its, bool shadowRay) c
         const Mesh *mesh = its.mesh;
         const MatrixXf &V = mesh->getVertexPositions();
         const MatrixXf &N = mesh->getVertexNormals();
-        const MatrixXf &UV = mesh->getVertexTexCoords();
         const MatrixXu &F = mesh->getIndices();
+        const MatrixXf &UV = mesh->getVertexTexCoords();
+        const std::vector<std::string> &F2M = mesh->getFaceMtlMap();
 
         /* Vertex indices of the triangle */
         uint32_t idx0 = F(0, hitIdx), idx1 = F(1, hitIdx), idx2 = F(2, hitIdx);
@@ -627,11 +628,12 @@ bool Accel::rayIntersect(const Ray3f &ray_, Intersection &its, bool shadowRay) c
            using barycentric coordinates */
         its.p = bary.x() * p0 + bary.y() * p1 + bary.z() * p2;
 
-        /* Compute proper texture coordinates if provided by the mesh */
+        /* Compute proper texture coordinates of proper material library file if provided by the mesh (.obj) */
         if (UV.size() > 0)
             its.uv = bary.x() * UV.col(idx0) +
                      bary.y() * UV.col(idx1) +
                      bary.z() * UV.col(idx2);
+        its.mtlName = F2M[hitIdx]; // according to .obj
 
         /* Compute the geometry frame */
         its.geoFrame = Frame((p1 - p0).cross(p2 - p0).normalized());

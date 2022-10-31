@@ -14,9 +14,9 @@ struct TBoundingStructure
 protected:
     TBoundingStructure() {} // If an abstract class requires a constructor, it should be declared "protected".
 
-public:
-    virtual ~TBoundingStructure() {}
+    virtual ~TBoundingStructure() = 0; // A function declaration cannot provide both a pure-specifier and a definition
 
+public:
     virtual void reset() = 0;
 
     /// Calculate the n-dimensional volume of the bounding structure
@@ -127,5 +127,18 @@ public:
     /// Return the overlapping region of the bounding structure and an unbounded ray
     virtual bool rayIntersect(const Ray3f &ray, float &nearT, float &farT) const = 0;
 };
+
+template <typename _PointType>
+TBoundingStructure<_PointType>::~TBoundingStructure()
+{
+    // Usually a pure virtual function does not need a function body,
+    // because we generally do not call this function of the abstract class,
+    // but only call the corresponding function of the derived class,
+    // but the pure virtual function of the parent class needs a function body,
+    // because we know that when the subclass When inheriting the parent class,
+    // if the parent class has a pure virtual function,
+    // the child class needs to implement the function, otherwise an error will be reported.
+    // Note that even if it has a body, the function must still be overridden by any concrete classes derived from Abstract. 
+}
 
 NORI_NAMESPACE_END

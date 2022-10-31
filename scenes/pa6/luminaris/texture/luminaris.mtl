@@ -1,0 +1,4 @@
+newmtl diffuse
+	map_Kd luminaris_Diffuse.tga
+newmtl emissive
+	map_Kd luminaris_Emissive.tga

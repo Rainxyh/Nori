@@ -160,9 +160,9 @@ public:
                     Color3f value = camera->sampleRay(ray, pixelSample, sampler->next2D());
 
                     /* Compute the incident radiance */
-                    // value *= integrator->Li(scene, sampler, ray); // iterator version
-                    size_t depth = 0;
-                    value *= integrator->Li(scene, sampler, ray, depth); // recursion version
+                    value *= integrator->Li(scene, sampler, ray); // iterator version
+                    // size_t depth = 0;
+                    // value *= integrator->Li(scene, sampler, ray, depth); // recursion version
 
                     /* Numerically robust online variance estimation using an
                        algorithm proposed by Donald Knuth (TAOCP vol.2, 3rd ed., p.232) */

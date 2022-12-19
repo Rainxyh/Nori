@@ -333,7 +333,7 @@ void BVH::build() {
 
     /* Conservative estimate for the total number of nodes */
     m_nodeNums.resize(2*size);
-    memset(m_nodeNums.data(), 0, sizeof(BVHNode) * m_nodeNums.size());
+    m_nodeNums = {};
     m_nodeNums[0].bbox = m_bbox;
     m_indices.resize(size);
 

@@ -16,6 +16,7 @@
 		    <color name="kd" value="0.2 0.2 0.4"/>
 		    <float name="alpha" value="0.28"/>
 		</bsdf>
+		
 		<texture type="texImage">
 			<string name="mtl" value="./texture/Zenigame.mtl"/>
 			<string name="image" value="./texture/ZenigameDh.tga"/>

@@ -49,16 +49,12 @@ public:
     
     /// Configure the offset of the block within the main image
     void setOffset(const Point2i &offset) { m_offset = offset; }
-
     /// Return the offset of the block within the main image
     inline const Point2i &getOffset() const { return m_offset; }
-    
     /// Configure the size of the block within the main image
     void setSize(const Point2i &size) { m_size = size; }
-
     /// Return the size of the block within the main image
     inline const Vector2i &getSize() const { return m_size; }
-
     /// Return the border size in pixels
     inline int getBorderSize() const { return m_borderSize; }
 
@@ -95,15 +91,16 @@ public:
 
     /// Return a human-readable string summary
     std::string toString() const;
+
 protected:
-    Point2i m_offset;
+    Point2i  m_offset;
     Vector2i m_size;
-    int m_borderSize = 0;
-    float *m_filter = nullptr;
-    float m_filterRadius = 0;
-    float *m_weightsX = nullptr;
-    float *m_weightsY = nullptr;
-    float m_lookupFactor = 0;
+    int      m_borderSize   = 0;
+    float    m_lookupFactor = 0;
+    float    m_filterRadius = 0;
+    float   *m_filter       = nullptr;
+    float   *m_weightsX     = nullptr;
+    float   *m_weightsY     = nullptr;
     mutable tbb::mutex m_mutex;
 };
 
@@ -137,8 +134,9 @@ public:
 
     /// Return the total number of blocks
     int getBlockCount() const { return m_blocksLeft; }
+
 protected:
-    enum EDirection { ERight = 0, EDown, ELeft, EUp };
+    enum EDirection { ERight = 0, EDown, ELeft, EUp }; // clockwise
 
     Point2i m_block;
     Vector2i m_numBlocks;

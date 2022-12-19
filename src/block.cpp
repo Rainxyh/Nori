@@ -17,15 +17,17 @@ ImageBlock::ImageBlock(const Vector2i &size, const ReconstructionFilter *filter)
     if (filter) {
         /* Tabulate the image reconstruction filter for performance reasons */
         m_filterRadius = filter->getRadius();
-        m_borderSize = (int) std::ceil(m_filterRadius - 0.5f);
+        m_borderSize = (int)std::ceil(m_filterRadius - 0.5f); // rounding m_filterRadius
         m_filter = new float[NORI_FILTER_RESOLUTION + 1];
-        for (int i=0; i<NORI_FILTER_RESOLUTION; ++i) {
-            float pos = (m_filterRadius * i) / NORI_FILTER_RESOLUTION;
+        for (int i = 0; i < NORI_FILTER_RESOLUTION; ++i)
+        {
+            float pos = (m_filterRadius * i) / NORI_FILTER_RESOLUTION; // Sampling in turn within the radius
             m_filter[i] = filter->eval(pos);
         }
         m_filter[NORI_FILTER_RESOLUTION] = 0.0f;
         m_lookupFactor = NORI_FILTER_RESOLUTION / m_filterRadius;
-        int weightSize = (int) std::ceil(2*m_filterRadius) + 1;
+        // Weights of the corresponding dimension in the filtering range includes centor pixel
+        int weightSize = (int)std::ceil(2 * m_filterRadius) + 1;
         m_weightsX = new float[weightSize];
         m_weightsY = new float[weightSize];
         memset(m_weightsX, 0, sizeof(float) * weightSize);
@@ -33,7 +35,7 @@ ImageBlock::ImageBlock(const Vector2i &size, const ReconstructionFilter *filter)
     }
 
     /* Allocate space for pixels and border regions */
-    resize(size.y() + 2*m_borderSize, size.x() + 2*m_borderSize);
+    resize(size.y() + 2 * m_borderSize, size.x() + 2 * m_borderSize); // The filtering range may exceed the original image boundary
 }
 
 ImageBlock::~ImageBlock() {
@@ -42,7 +44,7 @@ ImageBlock::~ImageBlock() {
     delete[] m_weightsY;
 }
 
-Bitmap *ImageBlock::toBitmap() const {
+Bitmap *ImageBlock::toBitmap() const { // from Block to Bitmap
     Bitmap *result = new Bitmap(m_size);
     for (int y=0; y<m_size.y(); ++y)
         for (int x=0; x<m_size.x(); ++x)
@@ -50,7 +52,7 @@ Bitmap *ImageBlock::toBitmap() const {
     return result;
 }
 
-void ImageBlock::fromBitmap(const Bitmap &bitmap) {
+void ImageBlock::fromBitmap(const Bitmap &bitmap) { // from Bitmap to Block
     if (bitmap.cols() != cols() || bitmap.rows() != rows())
         throw NoriException("Invalid bitmap dimensions!");
 
@@ -77,25 +79,25 @@ void ImageBlock::put(const Point2f &_pos, const Color3f &value) {
         Point2i((int)  std::ceil(pos.x() - m_filterRadius), (int)  std::ceil(pos.y() - m_filterRadius)),
         Point2i((int) std::floor(pos.x() + m_filterRadius), (int) std::floor(pos.y() + m_filterRadius))
     );
-    bbox.clip(BoundingBox2i(Point2i(0, 0), Point2i((int) cols() - 1, (int) rows() - 1)));
+    bbox.clip(BoundingBox2i(Point2i(0, 0), Point2i((int)cols() - 1, (int)rows() - 1)));
 
     /* Lookup values from the pre-rasterized filter */
-    for (int x=bbox.min.x(), idx = 0; x<=bbox.max.x(); ++x)
-        m_weightsX[idx++] = m_filter[(int) (std::abs(x-pos.x()) * m_lookupFactor)];
-    for (int y=bbox.min.y(), idx = 0; y<=bbox.max.y(); ++y)
-        m_weightsY[idx++] = m_filter[(int) (std::abs(y-pos.y()) * m_lookupFactor)];
+    for (int x = bbox.min.x(), idx = 0; x <= bbox.max.x(); ++x)
+        m_weightsX[idx++] = m_filter[(int)(std::abs(x - pos.x()) * m_lookupFactor)];
+    for (int y = bbox.min.y(), idx = 0; y <= bbox.max.y(); ++y)
+        m_weightsY[idx++] = m_filter[(int)(std::abs(y - pos.y()) * m_lookupFactor)];
 
-    for (int y=bbox.min.y(), yr=0; y<=bbox.max.y(); ++y, ++yr) 
-        for (int x=bbox.min.x(), xr=0; x<=bbox.max.x(); ++x, ++xr) 
+    for (int y = bbox.min.y(), yr = 0; y <= bbox.max.y(); ++y, ++yr)
+        for (int x = bbox.min.x(), xr = 0; x <= bbox.max.x(); ++x, ++xr)
             coeffRef(y, x) += Color4f(value) * m_weightsX[xr] * m_weightsY[yr];
 }
     
 void ImageBlock::put(ImageBlock &b) {
-    Vector2i offset = b.getOffset() - m_offset +
-        Vector2i::Constant(m_borderSize - b.getBorderSize());
+    Vector2i offset = b.getOffset() - m_offset;
+        //  + Vector2i::Constant(m_borderSize - b.getBorderSize());
     Vector2i size   = b.getSize()   + Vector2i(2*b.getBorderSize());
 
-    tbb::mutex::scoped_lock lock(m_mutex);
+    tbb::mutex::scoped_lock lock(m_mutex); // During the merge operation, this function locks the destination block using a mutex.
 
     block(offset.y(), offset.x(), size.y(), size.x()) 
         += b.topLeftCorner(size.y(), size.x());
@@ -126,6 +128,7 @@ bool BlockGenerator::next(ImageBlock &block) {
 
     Point2i pos = m_block * m_blockSize;
     block.setOffset(pos);
+    // If the remaining part is large enough, it will be updated with the preset size, otherwise it will be cropped
     block.setSize((m_size - pos).cwiseMin(Vector2i::Constant(m_blockSize)));
 
     if (--m_blocksLeft == 0)
@@ -138,7 +141,6 @@ bool BlockGenerator::next(ImageBlock &block) {
             case ELeft:  --m_block.x(); break;
             case EUp:    --m_block.y(); break;
         }
-
         if (--m_stepsLeft == 0) {
             m_direction = (m_direction + 1) % 4;
             if (m_direction == ELeft || m_direction == ERight) 

@@ -30,6 +30,7 @@ public:
         ESampler,
         ETest,
         EReconstructionFilter,
+
         EClassTypeCount
     };
 
@@ -100,7 +101,7 @@ public:
  */
 class NoriObjectFactory {
 public:
-    typedef std::function<NoriObject *(const PropertyList &)> Constructor;
+    using Constructor = std::function<NoriObject *(const PropertyList &)>;
 
     /**
      * \brief Register an object constructor with the object factory
@@ -128,17 +129,13 @@ public:
      *     A list of properties that will be passed to the constructor
      *     of the class.
      */
-    static NoriObject *createInstance(const std::string &name,
-            const PropertyList &propList) {
-        if (!m_constructors || m_constructors->find(name) == m_constructors->end())
-            throw NoriException("A constructor for class \"%s\" could not be found!", name);
-        return (*m_constructors)[name](propList);
-    }
+    static NoriObject *createInstance(const std::string &name, const PropertyList &propList);
+
 private:
     static std::map<std::string, Constructor> *m_constructors;
 };
 
-/// Macro for registering an object constructor with the \ref NoriObjectFactory
+/// Macro for registering an object constructor with the \ref NoriObjectFactory, macro use "##" to link string
 #define NORI_REGISTER_CLASS(cls, name)                            \
     cls *cls##_create(const PropertyList &list)                   \
     {                                                             \
@@ -151,5 +148,24 @@ private:
             NoriObjectFactory::registerClass(name, cls##_create); \
         }                                                         \
     } cls##__NORI_;
+/*
+NORI_REGISTER_CLASS(XXX, name)
+{
+    XXX *XXX_creat(const PropertyList &list)
+    {
+        return new XXX(list);
+    }
+
+    static struct XXX_
+    {
+        // constructor calls registerClass to register
+        XXX_() 
+        {
+            // Get the constructor of the corresponding class and add it to the Map of the factory
+            NoriObjectFactory::registerClass(name, XXX_create); 
+        }
+    } XXX__NORI_;
+}
+*/
 
 NORI_NAMESPACE_END

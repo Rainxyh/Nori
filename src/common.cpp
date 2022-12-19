@@ -163,7 +163,7 @@ filesystem::resolver *getFileResolver() {
     return resolver;
 }
 
-Color3f Color3f::toSRGB() const {
+Color3f Color3f::toSRGB() const { // gamma correct, from linear space to sRGB
     Color3f result;
 
     for (int i=0; i<3; ++i) {
@@ -221,6 +221,19 @@ Transform Transform::operator*(const Transform &t) const {
     return Transform(m_transform * t.m_transform,
         t.m_inverse * m_inverse);
 }
+
+void stringIgnoreCase(std::string str, size_t depth, std::vector<std::string> &strList){
+    if (depth == str.length()){
+        strList.push_back(str);
+        return;
+    }
+    stringIgnoreCase(str, depth + 1, strList);
+    if (!isalpha(str[depth]))
+        return;
+    str[depth] ^= (1 << 5); // case conversion
+    stringIgnoreCase(str, depth + 1, strList);
+    str[depth] ^= (1 << 5); // conversion recovery, time travel is best not to affect the past
+};
 
 Vector3f sphericalDirection(float theta, float phi) {
     float sinTheta, cosTheta, sinPhi, cosPhi;

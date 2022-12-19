@@ -13,27 +13,32 @@
 
 NORI_NAMESPACE_BEGIN
 
-NoriObject *loadFromXML(const std::string &filename) {
+NoriObject *loadFromXML(const std::string &filename)
+{
     /* Load the XML file using 'pugi' (a tiny self-contained XML parser implemented in C++) */
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(filename.c_str());
 
     /* Helper function: map a position offset in bytes to a more readable line/column value */
-    auto offset = [&](ptrdiff_t pos) -> std::string {
+    auto offset = [&](ptrdiff_t pos) -> std::string
+    {
         std::fstream is(filename);
         char buffer[1024];
         int line = 0, linestart = 0, offset = 0;
-        while (is.good()) {
+        while (is.good())
+        {
             is.read(buffer, sizeof(buffer));
-            for (int i = 0; i < is.gcount(); ++i) {
-                if (buffer[i] == '\n') {
+            for (int i = 0; i < is.gcount(); ++i)
+            {
+                if (buffer[i] == '\n')
+                {
                     if (offset + i >= pos)
                         return tfm::format("line %i, col %i", line + 1, pos - linestart);
                     ++line;
                     linestart = offset + i;
                 }
             }
-            offset += (int) is.gcount();
+            offset += (int)is.gcount();
         }
         return "byte offset " + std::to_string(pos);
     };
@@ -42,7 +47,8 @@ NoriObject *loadFromXML(const std::string &filename) {
         throw NoriException("Error while parsing \"%s\": %s (at %s)", filename, result.description(), offset(result.offset));
 
     /* Set of supported XML tags */
-    enum ETag {
+    enum ETag
+    {
         /* Object classes */
         EScene                = NoriObject::EScene,
         EMesh                 = NoriObject::EMesh,
@@ -65,6 +71,7 @@ NoriObject *loadFromXML(const std::string &filename) {
         EPoint,
         EVector,
         EColor,
+
         ETransform,
         ETranslate,
         EMatrix,
@@ -77,7 +84,15 @@ NoriObject *loadFromXML(const std::string &filename) {
 
     /* Create a mapping from tag names to tag IDs */
     std::map<std::string, ETag> tags;
-    tags["scene"]      = EScene;
+     /* Helper function to accept strings regardless of case */
+    auto names2IDs = [&](std::string tagName, ETag tag){
+        std::vector<std::string> tagNameList;
+        stringIgnoreCase(tagName, 0, tagNameList);
+        std::for_each(tagNameList.begin(), tagNameList.end(), [&](std::string tagname)
+                      { tags[tagname] = tag; });
+    };
+    // names2IDs("scene", EScene);
+    tags["scene"]       = EScene;
     tags["mesh"]       = EMesh;
     tags["texture"]    = ETexture;
     tags["bsdf"]       = EBSDF;
@@ -89,6 +104,7 @@ NoriObject *loadFromXML(const std::string &filename) {
     tags["sampler"]    = ESampler;
     tags["rfilter"]    = EReconstructionFilter;
     tags["test"]       = ETest;
+
     tags["boolean"]    = EBoolean;
     tags["integer"]    = EInteger;
     tags["float"]      = EFloat;
@@ -96,6 +112,7 @@ NoriObject *loadFromXML(const std::string &filename) {
     tags["point"]      = EPoint;
     tags["vector"]     = EVector;
     tags["color"]      = EColor;
+
     tags["transform"]  = ETransform;
     tags["translate"]  = ETranslate;
     tags["matrix"]     = EMatrix;
@@ -104,8 +121,10 @@ NoriObject *loadFromXML(const std::string &filename) {
     tags["lookat"]     = ELookAt;
 
     /* Helper function to check if attributes are fully specified */
-    auto check_attributes = [&](const pugi::xml_node &node, std::set<std::string> attrs) {
-        for (auto attr : node.attributes()) {
+    auto check_attributes = [&](const pugi::xml_node &node, std::set<std::string> attrs) -> void
+    {
+        for (auto attr : node.attributes())
+        {
             auto it = attrs.find(attr.name());
             if (it == attrs.end())
                 throw NoriException("Error while parsing \"%s\": unexpected attribute \"%s\" in \"%s\" at %s",
@@ -118,10 +137,10 @@ NoriObject *loadFromXML(const std::string &filename) {
     };
 
     Eigen::Affine3f transform;
-
     /* Helper function to parse a Nori XML node (recursive) */
-    std::function<NoriObject *(pugi::xml_node &, PropertyList &, int)> parseTag = [&](
-        pugi::xml_node &node, PropertyList &list, int parentTag) -> NoriObject * {
+    std::function<NoriObject *(pugi::xml_node &, PropertyList &, int)> parseTag =
+        [&](pugi::xml_node &node, PropertyList &list, int parentTag) -> NoriObject *
+    {
         /* Skip over comments */
         if (node.type() == pugi::node_comment || node.type() == pugi::node_declaration)
             return nullptr;
@@ -136,14 +155,14 @@ NoriObject *loadFromXML(const std::string &filename) {
         if (it == tags.end())
             throw NoriException("Error while parsing \"%s\": unexpected tag \"%s\" at %s",
                                 filename, node.name(), offset(node.offset_debug()));
-        int tag = it->second;
 
+        int tag = it->second; // ETag
         /* Perform some safety checks to make sure that the XML tree really makes sense */
-        bool hasParent            = parentTag != EInvalid;
+        bool hasParent            = parentTag != EInvalid; // only root's parent node could be EInvalid
         bool parentIsObject       = hasParent && parentTag < NoriObject::EClassTypeCount;
         bool currentIsObject      = tag < NoriObject::EClassTypeCount;
         bool parentIsTransform    = parentTag == ETransform;
-        bool currentIsTransformOp = tag == ETranslate || tag == ERotate || tag == EScale || tag == ELookAt || tag == EMatrix;
+        bool currentIsTransformOp = tag == ETranslate || tag == EMatrix || tag == ERotate || tag == EScale || tag == ELookAt;
 
         if (!hasParent && !currentIsObject)
             throw NoriException("Error while parsing \"%s\": root element \"%s\" must be a Nori object (at %s)",
@@ -152,7 +171,7 @@ NoriObject *loadFromXML(const std::string &filename) {
         if (parentIsTransform != currentIsTransformOp)
             throw NoriException("Error while parsing \"%s\": transform nodes "
                                 "can only contain transform operations (at %s)",
-                                filename,  offset(node.offset_debug()));
+                                filename, offset(node.offset_debug()));
 
         if (hasParent && !parentIsObject && !(parentIsTransform && currentIsTransformOp))
             throw NoriException("Error while parsing \"%s\": node \"%s\" requires a Nori object as parent (at %s)",
@@ -165,136 +184,160 @@ NoriObject *loadFromXML(const std::string &filename) {
 
         PropertyList propList;
         std::vector<NoriObject *> children;
-        for (pugi::xml_node &ch: node.children()) {
+        for (pugi::xml_node &ch : node.children())
+        {
             NoriObject *child = parseTag(ch, propList, tag); // recursive processing sub-label
             if (child)
                 children.push_back(child);
         }
 
         NoriObject *result = nullptr;
-        try {
-            if (currentIsObject) {
-                check_attributes(node, { "type" }); // <noriobject> labels only have <type> attribute
+        try
+        {
+            if (currentIsObject)
+            {
+                check_attributes(node, {"type"}); // <noriobject> labels only have <type> attribute
 
                 /* This is an object, first instantiate it */
                 result = NoriObjectFactory::createInstance(
-                    node.attribute("type").value(), // get <type> attribute, which is a derived class corresponding to certain <noriobject>
-                    propList
-                );
+                    // get <type> attribute, which is a derived class corresponding to certain <noriobject>
+                    node.attribute("type").value(),
+                    propList);
 
-                if (result->getClassType() != (int) tag) {
+                if (result->getClassType() != (int)tag)
+                {
                     throw NoriException(
                         "Unexpectedly constructed an object "
                         "of type <%s> (expected type <%s>): %s",
                         NoriObject::classTypeName(result->getClassType()),
-                        NoriObject::classTypeName((NoriObject::EClassType) tag),
+                        NoriObject::classTypeName((NoriObject::EClassType)tag),
                         result->toString());
                 }
 
                 /* Add all children */
-                for (auto ch: children) {
+                for (auto ch : children)
+                {
                     result->addChild(ch);
                     ch->setParent(result);
                 }
 
                 /* Activate / configure the object */
                 result->activate();
-            } else {
+            }
+            else
+            {
                 /* This is a property */
-                switch (tag) {
-                    case EString: {
-                            check_attributes(node, { "name", "value" });
-                            list.setString(node.attribute("name").value(), node.attribute("value").value());
-                        }
-                        break;
-                    case EFloat: {
-                            check_attributes(node, { "name", "value" });
-                            list.setFloat(node.attribute("name").value(), StringtoFloat(node.attribute("value").value()));
-                        }
-                        break;
-                    case EInteger: {
-                            check_attributes(node, { "name", "value" });
-                            list.setInteger(node.attribute("name").value(), StringtoInt(node.attribute("value").value()));
-                        }
-                        break;
-                    case EBoolean: {
-                            check_attributes(node, { "name", "value" });
-                            list.setBoolean(node.attribute("name").value(), StringtoBool(node.attribute("value").value()));
-                        }
-                        break;
-                    case EPoint: {
-                            check_attributes(node, { "name", "value" });
-                            list.setPoint(node.attribute("name").value(), Point3f(StringtoVector3f(node.attribute("value").value())));
-                        }
-                        break;
-                    case EVector: {
-                            check_attributes(node, { "name", "value" });
-                            list.setVector(node.attribute("name").value(), Vector3f(StringtoVector3f(node.attribute("value").value())));
-                        }
-                        break;
-                    case EColor: {
-                            check_attributes(node, { "name", "value" });
-                            list.setColor(node.attribute("name").value(), Color3f(StringtoVector3f(node.attribute("value").value()).array()));
-                        }
-                        break;
-                    case ETransform: {
-                            check_attributes(node, { "name" });
-                            list.setTransform(node.attribute("name").value(), transform.matrix());
-                        }
-                        break;
-                    case ETranslate: {
-                            check_attributes(node, { "value" });
-                            Eigen::Vector3f v = StringtoVector3f(node.attribute("value").value());
-                            transform = Eigen::Translation<float, 3>(v.x(), v.y(), v.z()) * transform;
-                        }
-                        break;
-                    case EMatrix: {
-                            check_attributes(node, { "value" });
-                            std::vector<std::string> tokens = tokenize(node.attribute("value").value());
-                            if (tokens.size() != 16)
-                                throw NoriException("Expected 16 values");
-                            Eigen::Matrix4f matrix;
-                            for (int i=0; i<4; ++i)
-                                for (int j=0; j<4; ++j)
-                                    matrix(i, j) = StringtoFloat(tokens[i*4+j]);
-                            transform = Eigen::Affine3f(matrix) * transform;
-                        }
-                        break;
-                    case EScale: {
-                            check_attributes(node, { "value" });
-                            Eigen::Vector3f v = StringtoVector3f(node.attribute("value").value());
-                            transform = Eigen::DiagonalMatrix<float, 3>(v) * transform;
-                        }
-                        break;
-                    case ERotate: {
-                            check_attributes(node, { "angle", "axis" });
-                            float angle = degToRad(StringtoFloat(node.attribute("angle").value()));
-                            Eigen::Vector3f axis = StringtoVector3f(node.attribute("axis").value());
-                            transform = Eigen::AngleAxis<float>(angle, axis) * transform;
-                        }
-                        break;
-                    case ELookAt: {
-                            check_attributes(node, { "origin", "target", "up" });
-                            Eigen::Vector3f origin = StringtoVector3f(node.attribute("origin").value());
-                            Eigen::Vector3f target = StringtoVector3f(node.attribute("target").value());
-                            Eigen::Vector3f up = StringtoVector3f(node.attribute("up").value());
+                switch (tag)
+                {
+                case EString:
+                {
+                    check_attributes(node, {"name", "value"});
+                    list.setString(node.attribute("name").value(), node.attribute("value").value());
+                }
+                break;
+                case EFloat:
+                {
+                    check_attributes(node, {"name", "value"});
+                    list.setFloat(node.attribute("name").value(), StringtoFloat(node.attribute("value").value()));
+                }
+                break;
+                case EInteger:
+                {
+                    check_attributes(node, {"name", "value"});
+                    list.setInteger(node.attribute("name").value(), StringtoInt(node.attribute("value").value()));
+                }
+                break;
+                case EBoolean:
+                {
+                    check_attributes(node, {"name", "value"});
+                    list.setBoolean(node.attribute("name").value(), StringtoBool(node.attribute("value").value()));
+                }
+                break;
+                case EPoint:
+                {
+                    check_attributes(node, {"name", "value"});
+                    list.setPoint(node.attribute("name").value(), Point3f(StringtoVector3f(node.attribute("value").value())));
+                }
+                break;
+                case EVector:
+                {
+                    check_attributes(node, {"name", "value"});
+                    list.setVector(node.attribute("name").value(), Vector3f(StringtoVector3f(node.attribute("value").value())));
+                }
+                break;
+                case EColor:
+                {
+                    check_attributes(node, {"name", "value"});
+                    list.setColor(node.attribute("name").value(), Color3f(StringtoVector3f(node.attribute("value").value()).array()));
+                }
+                break;
+                case ETransform:
+                {
+                    check_attributes(node, {"name"});
+                    list.setTransform(node.attribute("name").value(), transform.matrix());
+                }
+                break;
+                case ETranslate:
+                {
+                    check_attributes(node, {"value"});
+                    Eigen::Vector3f v = StringtoVector3f(node.attribute("value").value());
+                    transform = Eigen::Translation<float, 3>(v.x(), v.y(), v.z()) * transform;
+                }
+                break;
+                case EMatrix:
+                {
+                    check_attributes(node, {"value"});
+                    std::vector<std::string> tokens = tokenize(node.attribute("value").value());
+                    if (tokens.size() != 16)
+                        throw NoriException("Expected 16 values");
+                    Eigen::Matrix4f matrix;
+                    for (int i = 0; i < 4; ++i)
+                        for (int j = 0; j < 4; ++j)
+                            matrix(i, j) = StringtoFloat(tokens[i * 4 + j]);
+                    transform = Eigen::Affine3f(matrix) * transform;
+                }
+                break;
+                case EScale:
+                {
+                    check_attributes(node, {"value"});
+                    Eigen::Vector3f v = StringtoVector3f(node.attribute("value").value());
+                    transform = Eigen::DiagonalMatrix<float, 3>(v) * transform;
+                }
+                break;
+                case ERotate:
+                {
+                    check_attributes(node, {"angle", "axis"});
+                    float angle = degToRad(StringtoFloat(node.attribute("angle").value()));
+                    Eigen::Vector3f axis = StringtoVector3f(node.attribute("axis").value());
+                    transform = Eigen::AngleAxis<float>(angle, axis) * transform;
+                }
+                break;
+                case ELookAt:
+                {
+                    check_attributes(node, {"origin", "target", "up"});
+                    Eigen::Vector3f origin = StringtoVector3f(node.attribute("origin").value());
+                    Eigen::Vector3f target = StringtoVector3f(node.attribute("target").value());
+                    Eigen::Vector3f up = StringtoVector3f(node.attribute("up").value());
 
-                            Vector3f dir = (target - origin).normalized();
-                            Vector3f left = up.normalized().cross(dir).normalized();
-                            Vector3f newUp = dir.cross(left).normalized();
+                    Vector3f dir = (target - origin).normalized();
+                    Vector3f left = up.normalized().cross(dir).normalized();
+                    Vector3f newUp = dir.cross(left).normalized();
 
-                            Eigen::Matrix4f trafo;
-                            trafo << left, newUp, dir, origin,
-                                      0, 0, 0, 1;
+                    Eigen::Matrix4f trafo;
+                    trafo << left, newUp, dir, origin,
+                        0, 0, 0, 1;
 
-                            transform = Eigen::Affine3f(trafo) * transform;
-                        }
-                        break;
+                    transform = Eigen::Affine3f(trafo) * transform;
+                }
+                break;
 
-                    default: throw NoriException("Unhandled element \"%s\"", node.name());
+                default:
+                    throw NoriException("Unhandled element \"%s\"", node.name());
                 };
             }
-        } catch (const NoriException &e) {
+        }
+        catch (const NoriException &e)
+        {
             throw NoriException("Error while parsing \"%s\": %s (at %s)", filename,
                                 e.what(), offset(node.offset_debug()));
         }

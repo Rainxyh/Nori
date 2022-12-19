@@ -19,14 +19,16 @@ public:
         /* Half filter size */
         m_radius = propList.getFloat("radius", 2.0f);
         /* Standard deviation of the Gaussian */
-        m_stddev = propList.getFloat("stddev", 0.5f);
+        m_stddev = propList.getFloat("stddev", 0.5f); 
     }
 
     float eval(float x) const {
-        float alpha = -1.0f / (2.0f * m_stddev*m_stddev);
+        float alpha = -1.0f / (2.0f * m_stddev * m_stddev);
+        float invterm = 1 / (std::sqrt(2 * M_PI) * m_stddev);
         return std::max(0.0f, 
             std::exp(alpha * x * x) - 
-            std::exp(alpha * m_radius * m_radius));
+            std::exp(alpha * m_radius * m_radius)) 
+            * invterm;
     }
 
     std::string toString() const {

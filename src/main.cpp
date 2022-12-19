@@ -153,7 +153,7 @@ static void render(Scene *scene, const std::string &filename) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
+    if (argc < 2) { // prompt if there are less than 2 parameters
         cerr << "Syntax: " << argv[0] << " <scene.xml> [--no-gui] [--threads N]" <<  endl;
         return -1;
     }
@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
                 /* Alternatively, provide a basic OpenEXR image viewer */
                 exrName = argv[i];
             } else {
-                cerr << "Fatal error: unknown file \"" << argv[i]
+                cerr << "Fatal error: unknown file type\"" << argv[i]
                      << "\", expected an extension of type .xml or .exr" << endl;
             }
         } catch (const std::exception &e) {
@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
             threadCount = tbb::task_scheduler_init::automatic;
         }
         try {
-            std::unique_ptr<NoriObject> root(loadFromXML(sceneName));
+            std::unique_ptr<NoriObject> root(loadFromXML(sceneName)); // load scene from .xml file
             /* When the XML root object is a scene, start rendering it .. */
             if (root->getClassType() == NoriObject::EScene)
                 render(static_cast<Scene *>(root.get()), sceneName);

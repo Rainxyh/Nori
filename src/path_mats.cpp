@@ -51,13 +51,12 @@ public:
         Color3f Lo(0.f);
         Color3f fr(1.f);
         Ray3f _ray = ray;
+        Point3f x, y;
+        Normal3f Nx, Ny;
+        Vector3f wo, wi;
+        Intersection its;
         while (1)
         {
-            Color3f Le(0.f);
-            Point3f x, y;
-            Normal3f Nx, Ny;
-            Vector3f wo, wi;
-            Intersection its;
             if (!scene->rayIntersect(_ray, its))
             {
                 break;

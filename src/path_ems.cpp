@@ -40,15 +40,15 @@ public:
         if (its.mesh->getBSDF()->isDiffuse()) // diffuse, sampling a emitter
         {
             Emitter *rand_emitter = scene->getRandomEmitter(); // random sample an emitter
-            rand_emitter->sample(sampler, y, Ny); // just sample and lerp point and normal
+            rand_emitter->sample(sampler, y, Ny);              // just sample and lerp point and normal
             wi = (y - x).normalized();
             BSDFQueryRecord bRec(its.toLocal(wo), its.toLocal(wi), ESolidAngle);
             Intersection its_ems;
             if (scene->rayIntersect(Ray3f(x, wi), its_ems) && (rand_emitter == its_ems.mesh->getEmitter())) // shadow ray can reach the certain random emitter
             {
                 float G = fabs(Nx.dot(wi)) * fabs(Ny.dot(-wi)) / (y - x).squaredNorm(); // dw (solid angle) change to dA (area)
-                Color3f fr = its.mesh->getBSDF()->eval(bRec); // BRDF term
-                Color3f coff = G * fr / rand_emitter->pdf() / scene->getEmitterPdf(); // integrate the above coefficients
+                Color3f fr = its.mesh->getBSDF()->eval(bRec);                           // BRDF term
+                Color3f coff = G * fr / rand_emitter->pdf() / scene->getEmitterPdf();   // integrate the above coefficients
                 Ld_ems = coff * rand_emitter->eval(Ny, -wi);
                 last_sample_is_ems = true; // Has emitter sample been done in the current step ?
             }
@@ -96,12 +96,12 @@ public:
         Color3f cumulative_coff(1.f);
         bool last_sample_is_ems = false;
         Ray3f _ray = ray;
+        Point3f x, y;
+        Normal3f Nx, Ny;
+        Vector3f wo, wi;
+        Intersection its;
         while (1)
         {
-            Point3f x, y;
-            Normal3f Nx, Ny;
-            Vector3f wo, wi;
-            Intersection its;
             if (!scene->rayIntersect(_ray, its))
                 break;
 
@@ -121,7 +121,7 @@ public:
                     break;
                 cumulative_coff /= probability;
             }
-            
+
             last_sample_is_ems = false;
             if (its.mesh->getBSDF()->isDiffuse()) // diffuse, sampling a emitter
             {

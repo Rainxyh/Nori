@@ -22,6 +22,7 @@ Bitmap::Bitmap(const std::string &filename) {
     const Imf::Header &header = file.header();
     const Imf::ChannelList &channels = header.channels();
 
+    // Set width, height
     Imath::Box2i dw = file.header().dataWindow();
     resize(dw.max.y - dw.min.y + 1, dw.max.x - dw.min.x + 1);
 
@@ -52,10 +53,9 @@ Bitmap::Bitmap(const std::string &filename) {
     if (!ch_r || !ch_g || !ch_b)
         throw NoriException("This is not a standard RGB OpenEXR file!");
 
-    size_t compStride = sizeof(float),
-           pixelStride = 3 * compStride,
-           rowStride = pixelStride * cols();
-
+    constexpr size_t compStride = sizeof(float),
+                     pixelStride = 3 * compStride;
+    size_t rowStride = pixelStride * cols();
     char *ptr = reinterpret_cast<char *>(data());
 
     Imf::FrameBuffer frameBuffer;
@@ -81,9 +81,9 @@ void Bitmap::saveEXR(const std::string &filename) {
     channels.insert("B", Imf::Channel(Imf::FLOAT));
 
     Imf::FrameBuffer frameBuffer;
-    size_t compStride = sizeof(float),
-           pixelStride = 3 * compStride,
-           rowStride = pixelStride * cols();
+    constexpr size_t compStride = sizeof(float),
+                     pixelStride = 3 * compStride;
+    size_t rowStride = pixelStride * cols();
 
     char *ptr = reinterpret_cast<char *>(data());
     frameBuffer.insert("R", Imf::Slice(Imf::FLOAT, ptr, pixelStride, rowStride)); ptr += compStride;

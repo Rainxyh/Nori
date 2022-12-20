@@ -1,9 +1,3 @@
-/*
-    This file is part of Nori, a simple educational ray tracer
-
-    Copyright (c) 2015 by Wenzel Jakob
-*/
-
 #include <nori/parser.h>
 #include <nori/proplist.h>
 #include <Eigen/Geometry>
@@ -91,8 +85,8 @@ NoriObject *loadFromXML(const std::string &filename)
         std::for_each(tagNameList.begin(), tagNameList.end(), [&](std::string tagname)
                       { tags[tagname] = tag; });
     };
-    // names2IDs("scene", EScene);
-    tags["scene"]       = EScene;
+    names2IDs("scene", EScene);
+    // tags["scene"]      = EScene;
     tags["mesh"]       = EMesh;
     tags["texture"]    = ETexture;
     tags["bsdf"]       = EBSDF;

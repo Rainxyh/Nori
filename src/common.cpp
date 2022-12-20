@@ -1,9 +1,3 @@
-/*
-    This file is part of Nori, a simple educational ray tracer
-
-    Copyright (c) 2015 by Wenzel Jakob
-*/
-
 #include <nori/object.h>
 #include <Eigen/Geometry>
 #include <Eigen/LU>

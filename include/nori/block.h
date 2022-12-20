@@ -1,9 +1,3 @@
-/*
-    This file is part of Nori, a simple educational ray tracer
-
-    Copyright (c) 2015 by Wenzel Jakob
-*/
-
 /* =======================================================================
      This file contains classes for parallel rendering of "image blocks".
  * ======================================================================= */

@@ -1,9 +1,3 @@
-/*
-    This file is part of Nori, a simple educational ray tracer
-
-    Copyright (c) 2015 by Wenzel Jakob
-*/
-
 #include <nori/camera.h>
 #include <nori/rfilter.h>
 #include <nori/warp.h>

@@ -39,10 +39,13 @@ public:
         {
             Point3f x = its.p, y;
             float G = 0.f, V = 1.f;
-            Emitter *random_emitter = scene->getRandomEmitter();
-            random_emitter->sample(sampler, y, Ny);
+            Emitter *rand_emitter = scene->getRandomEmitter();
+            EmitterQueryRecord eRec;
+            rand_emitter->sample(eRec, sampler); // just sample and lerp point and normal
+            y = eRec.ref; 
+            Ny = eRec.n;
             Vector3f wo = -ray.d.normalized(), wi = (y - x).normalized();
-            Lr = random_emitter->eval(Ny, -wi) / random_emitter->pdf();
+            Lr = rand_emitter->eval(Ny, -wi) / rand_emitter->pdf();
 
             BSDFQueryRecord bRec(its.toLocal(wi), its.toLocal(wo), ESolidAngle);
             Color3f fr = its.mesh->getBSDF()->eval(bRec);
@@ -108,10 +111,13 @@ public:
             if (its.mesh->getBSDF()->isDiffuse()) // diffuse
             {
                 float G = 0.f, V = 1.f;
-                Emitter *random_emitter = scene->getRandomEmitter();
-                random_emitter->sample(sampler, y, Ny);
+                Emitter *rand_emitter = scene->getRandomEmitter();
+                EmitterQueryRecord eRec;
+                rand_emitter->sample(eRec, sampler); // just sample and lerp point and normal
+                y = eRec.ref;
+                Ny = eRec.n;
                 wi = (y - x).normalized();
-                Color3f Lr = random_emitter->eval(Ny, -wi) / random_emitter->pdf();
+                Color3f Lr = rand_emitter->eval(Ny, -wi) / rand_emitter->pdf();
 
                 BSDFQueryRecord bRec(its.toLocal(wi), its.toLocal(wo), ESolidAngle);
                 fr *= its.mesh->getBSDF()->eval(bRec);

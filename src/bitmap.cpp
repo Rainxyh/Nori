@@ -1,4 +1,5 @@
 #include <nori/bitmap.h>
+#include <memory>
 #include <ImfInputFile.h>
 #include <ImfOutputFile.h>
 #include <ImfChannelList.h>
@@ -113,6 +114,30 @@ void Bitmap::savePNG(const std::string &filename) {
     }
 
     delete[] rgb8;
+}
+
+static float gammaCorrect(float value) {
+    if (value <= 0.0031308f) return 12.92f * value;
+    return 1.055f * std::pow(value, 1.f/2.4f) - 0.055f;
+}
+
+void Bitmap::saveToLDR(const std::string &filename) {
+    cout << "Writing a " << cols() << "x" << rows()
+    << " PNG file to \"" << filename << "\"" << endl;
+
+    std::unique_ptr<uint8_t[]> rgb8(new uint8_t[3 * cols() * rows()]);
+    uint8_t *dst = rgb8.get();
+    for (int y = 0; y < rows(); ++y) {
+        for (int x = 0; x < cols(); ++x) {
+#define TO_BYTE(v) (uint8_t) clamp(255.f * gammaCorrect(v) + 0.5f, 0.f, 255.f)
+            dst[0] = TO_BYTE(coeff(y,x).r());
+            dst[1] = TO_BYTE(coeff(y,x).g());
+            dst[2] = TO_BYTE(coeff(y,x).b());
+#undef TO_BYTE
+            dst += 3;
+        }
+    }
+    stbi_write_png(filename.c_str(),cols(),rows(),3,rgb8.get(),3*cols());
 }
 
 NORI_NAMESPACE_END

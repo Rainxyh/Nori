@@ -148,13 +148,16 @@ Node *BVH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
         return node;
     }
     ++this->m_innerNodeNum; // internal node
-    BoundingBox3f *child_bbox_list[m_Dim];
-    for (size_t i = 0; i < m_Dim; ++i)
-        child_bbox_list[i] = new BoundingBox3f();
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
     uint8_t chosen_axis = depth % 3;
     Point3f box_min = box->getCorner(0), box_max = box->getCorner(7);
     float axis_mid = ((box_max + box_min) / 2)[chosen_axis];
+    BoundingBox3f *child_bbox_list[m_Dim];
+    Point3f child_box_min = box_min, child_box_max = box_max;
+    child_box_min[chosen_axis] = axis_mid;
+    child_box_max[chosen_axis] = axis_mid;
+    child_bbox_list[0] = new BoundingBox3f(box_min, child_box_max); // box_min and box_min move along the positive direction of the corresponding axis to the corresponding distance from the midpoint
+    child_bbox_list[1] = new BoundingBox3f(child_box_min, box_max); // box_min and box_min move along the negative direction of the corresponding axis to the corresponding distance from the midpoint
     for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx)
     {
         for (size_t i = 0; i < m_Dim; ++i)
@@ -166,11 +169,9 @@ Node *BVH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
             uint32_t triangle_idx_in_mesh_buffer = triangle_list[mesh_idx][triangle_idx];
             BoundingBox3f triangle_bbox = m_meshes[mesh_idx]->getBoundingBox(triangle_idx_in_mesh_buffer);
             Point3f prim_center = triangle_bbox.getCenter();
-            uint8_t switch_0_1 = 0;
+            uint8_t switch_0_1 = 1;
             if (prim_center[chosen_axis] < axis_mid)
                 switch_0_1 = 0;
-            else
-                switch_0_1 = 1;
             child_bbox_list[switch_0_1]->expandBy(triangle_bbox);
             regional_division_triangle_list[switch_0_1][mesh_idx].push_back(triangle_idx_in_mesh_buffer);
         }

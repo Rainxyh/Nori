@@ -40,7 +40,10 @@ public:
         if (its.mesh->getBSDF()->isDiffuse()) // diffuse, sampling a emitter
         {
             Emitter *rand_emitter = scene->getRandomEmitter(); // random sample an emitter
-            rand_emitter->sample(sampler, y, Ny);              // just sample and lerp point and normal
+            EmitterQueryRecord eRec;
+            rand_emitter->sample(eRec, sampler); // just sample and lerp point and normal
+            y = eRec.ref;
+            Ny = eRec.n;
             wi = (y - x).normalized();
             BSDFQueryRecord bRec(its.toLocal(wo), its.toLocal(wi), ESolidAngle);
             Intersection its_ems;
@@ -126,7 +129,10 @@ public:
             if (its.mesh->getBSDF()->isDiffuse()) // diffuse, sampling a emitter
             {
                 Emitter *rand_emitter = scene->getRandomEmitter();
-                rand_emitter->sample(sampler, y, Ny); // just sample and lerp point and normal
+                EmitterQueryRecord eRec;
+                rand_emitter->sample(eRec, sampler); // just sample and lerp point and normal
+                y = eRec.ref;
+                Ny = eRec.n;
                 wi = (y - x).normalized();
                 BSDFQueryRecord bRec(its.toLocal(wo), its.toLocal(wi), ESolidAngle);
                 Intersection its_ems;

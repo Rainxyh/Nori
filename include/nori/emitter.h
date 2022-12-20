@@ -9,10 +9,41 @@ NORI_NAMESPACE_BEGIN
  * parameters to the evaluation and sampling routines in \ref Emitter
  */
 struct EmitterQueryRecord {
-    
+    /// Pointer to the sampled emitter
+    const Emitter *emitter;
+    /// Origin point from which we sample the emitter
+    Point3f ref;
+    /// Sampled position on the light source
+    Point3f p;
+    /// Associated surface normal
+    Normal3f n;
+    /// Solid angle density wrt. 'ref'
+    float pdf;
+    /// Direction vector from 'ref' to 'p'
+    Vector3f wi;
+    /// Distance between 'ref' and 'p'
+    float dist;
 
-    /// Create a new record for sampling the Emitter
-    EmitterQueryRecord(){}
+    /// Create an unitialized query record
+    EmitterQueryRecord() : emitter(nullptr) { }
+
+    /// Create a new query record that can be used to sample a emitter
+    EmitterQueryRecord(const Point3f &ref) : ref(ref) { }
+
+    /**
+     * \brief Create a query record that can be used to query the
+     * sampling density after having intersected an area emitter
+     */
+    EmitterQueryRecord(const Emitter *emitter, 
+            const Point3f &ref, const Point3f &p,
+            const Normal3f &n) : emitter(emitter), ref(ref), p(p), n(n) {
+        wi = p - ref;
+        dist = wi.norm();
+        wi /= dist;
+    }
+
+    /// Return a human-readable string summary
+    std::string toString() const; // Due to the use of the emitter class, pre-declaration or post-definition must be performed
 };
 
 /**
@@ -20,7 +51,10 @@ struct EmitterQueryRecord {
  */
 class Emitter : public NoriObject {
 public:
-    virtual void setMesh(Mesh *mesh) = 0;
+    /**
+     * \brief Set the mesh if the emitter is attached to a mesh
+     * */
+    void setMesh(Mesh *mesh) { m_mesh = mesh; }
 
     /**
      * 
@@ -36,8 +70,7 @@ public:
      *         factor associated with the outgoing direction, when this 
      *         is appropriate. A zero value means that sampling failed.
      */
-    virtual void sample(Sampler *sampler, Point3f &point, Normal3f &normal) const = 0;
-    virtual void sample(Sampler *sampler, Point3f &point, Normal3f &normal, float &pdf) const = 0;
+    virtual void sample(EmitterQueryRecord &lRec, Sampler *sampler) const = 0;
 
     /**
      * \brief Evaluate the Emitter for a pair of directions and measure
@@ -48,6 +81,7 @@ public:
      * \return
      *     The Emitter value, evaluated for each color channel
      */
+    virtual Color3f eval(const EmitterQueryRecord &lRec) const = 0;
     virtual Color3f eval(const Vector3f& normal, const Vector3f& wi) const = 0;
 
     /**
@@ -74,11 +108,37 @@ public:
      */
     virtual Color3f getRadiance() const = 0;
 
+    /// Sample a photon
+    virtual Color3f samplePhoton(Ray3f &ray, const Point2f &sample1, const Point2f &sample2) const {
+        throw NoriException("Emitter::samplePhoton(): not implemented!");
+    }
+
     /**
      * \brief Return the type of object (i.e. Mesh/Emitter/etc.) 
      * provided by this instance
      * */
     EClassType getClassType() const { return EEmitter; }
+
+protected:
+    /// Pointer to the mesh if the emitter is attached to a mesh
+    Mesh * m_mesh = nullptr;
 };
+
+inline std::string EmitterQueryRecord::toString() const {
+    return tfm::format(
+        "EmitterQueryRecord[\n"
+        "  emitter = \"%s\",\n"
+        "  ref = %s,\n"
+        "  p = %s,\n"
+        "  n = %s,\n"
+        "  pdf = %f,\n"
+        "  wi = %s,\n"
+        "  dist = %f\n"
+        "]",
+        indent(emitter->toString()),
+        ref.toString(), p.toString(),
+        n.toString(), pdf, wi.toString(), dist
+    );
+}
 
 NORI_NAMESPACE_END

@@ -5,7 +5,6 @@ int main(int argc, char **argv) {
     using namespace nori;
 
     try {
-
         // if file is passed as argument, handle it
         if (argc == 2) {
             std::string filename = argv[1];
@@ -22,8 +21,6 @@ int main(int argc, char **argv) {
                 << "\", expected an extension of type .exr" << endl;
             }
         }
-
-
     } catch (const std::exception &e) {
         cerr << "Fatal error: " << e.what() << endl;
         return -1;

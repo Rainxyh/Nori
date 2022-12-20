@@ -47,7 +47,7 @@ public:
     const std::vector<Mesh *> &getMeshes() const { return m_meshes; }
 
     /// Return a reference to an array containing all emitters
-    std::vector<Emitter *> getEmitter() const { return m_emitters; }
+    std::vector<Emitter *> getEmitterList() const { return m_emitters; }
 
     /// Return a reference to a random emitter
     Emitter *getRandomEmitter() const {

@@ -74,6 +74,7 @@ add_executable(nori
   # Source code files
   src/accel.cpp
   src/ao.cpp
+  src/av.cpp
   src/area.cpp
   src/bitmap.cpp
   src/block.cpp
@@ -97,6 +98,7 @@ add_executable(nori
   src/path_mats.cpp
   src/path_mis.cpp
   src/perspective.cpp
+  src/pointlight.cpp
   src/proplist.cpp
   src/rfilter.cpp
   src/scene.cpp
@@ -119,13 +121,19 @@ add_executable(warptest
   src/common.cpp
 )
 
+# The following lines build the tonemapper
+add_executable(tonemapper
+        src/bitmap.cpp
+        src/common.cpp
+        src/hdrToLdr.cpp)
+
 if (WIN32)
   target_link_libraries(nori tbb_static pugixml IlmImf nanogui ${NANOGUI_EXTRA_LIBS} zlibstatic)
 else()
   target_link_libraries(nori tbb_static pugixml IlmImf nanogui ${NANOGUI_EXTRA_LIBS})
 endif()
-
 target_link_libraries(warptest tbb_static nanogui ${NANOGUI_EXTRA_LIBS})
+target_link_libraries(tonemapper IlmImf)
 
 # Force colored output for the ninja generator
 if (CMAKE_GENERATOR STREQUAL "Ninja")
@@ -140,5 +148,6 @@ endif()
 
 target_compile_features(warptest PRIVATE cxx_std_17)
 target_compile_features(nori PRIVATE cxx_std_17)
+target_compile_features(tonemapper PRIVATE cxx_std_17)
 
 # vim: set et ts=2 sw=2 ft=cmake nospell:

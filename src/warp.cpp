@@ -79,7 +79,7 @@ float Warp::squareToUniformSpherePdf(const Vector3f &v)
 {
     if (fabs(1.f - sqrt(pow(v.x(), 2) + pow(v.y(), 2) + pow(v.z(), 2))) > 1e-5)
         return 0;
-    return 1.f / (4.f * M_PI);
+    return INV_FOURPI;
 }
 
 Vector3f Warp::squareToUniformHemisphere(const Point2f &sample)

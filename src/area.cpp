@@ -12,16 +12,17 @@ public:
         m_radiance = props.getColor("radiance");
     }
 
-    void sample(Sampler *sampler, Point3f &point, Normal3f &normal) const
+    void sample(EmitterQueryRecord & lRec, Sampler *sampler) const
     {
-        m_mesh->uniformSample(sampler, point, normal); // sample triangle from mesh
+        m_mesh->uniformSample(sampler, lRec.ref, lRec.n, lRec.pdf); // sample triangle from mesh
     }
 
-    void sample(Sampler *sampler, Point3f &point, Normal3f &normal, float &pdf) const
+    Color3f eval(const EmitterQueryRecord &lRec) const
     {
-        m_mesh->uniformSample(sampler, point, normal, pdf); // sample triangle from mesh
+        if (lRec.n.dot(lRec.wi) <= 0)
+            return Color3f(0.);
+        return m_radiance;
     }
-
     Color3f eval(const Vector3f &normal, const Vector3f &wi) const
     {
         if (normal.dot(wi) <= 0)
@@ -39,9 +40,9 @@ public:
         return m_radiance;
     }
 
-    void setMesh(Mesh *mesh)
+    virtual Color3f samplePhoton(Ray3f &ray, const Point2f &sample1, const Point2f &sample2) const
     {
-        this->m_mesh = mesh;
+        throw NoriException("samplePhoton() method not implemented yet for PointLight");
     }
 
     std::string toString() const
@@ -55,7 +56,6 @@ public:
 
 protected:
     Color3f m_radiance;
-    Mesh *m_mesh;
 };
 
 NORI_REGISTER_CLASS(AreaLight, "area");

@@ -8,7 +8,6 @@
 #include <nori/texture.h>
 
 NORI_NAMESPACE_BEGIN
-
 /**
  * \brief Intersection data structure
  *
@@ -179,14 +178,14 @@ protected:
     MatrixXf      m_N;                   ///< Vertex normals
     MatrixXf      m_UV;                  ///< Vertex texture coordinates
     MatrixXu      m_F;                   ///< Faces
-    std::vector<std::string> face_idx_2_mtl_map;         ///< Faces
+    std::vector<std::string> face_idx_2_mtl_map; ///< Faces
     NoriTexture       *m_texture = nullptr;      ///< Texture of the mesh
     BSDF              *m_bsdf    = nullptr;      ///< BSDF of the surface
-    Emitter           *m_emitter = nullptr;      ///< Associated emitter, if any
+    Emitter         *m_emitter = nullptr;      ///< Associated emitter, if any
     DiscretePDF       *m_dpdf    = nullptr;      ///< Discrete probability density
-    BoundingBox3f     *m_bbox;                   ///< Bounding box of the mesh
-    BoundingSphere    *m_bsphere;                ///< Bounding sphere of the mesh
-    BoundingStructure *m_BS;                     ///< Bounding structure of the mesh
+    BoundingBox3f     *m_bbox    = nullptr;      ///< Bounding box of the mesh
+    BoundingSphere    *m_bsphere = nullptr;      ///< Bounding sphere of the mesh
+    BoundingStructure *m_BS      = nullptr;      ///< Bounding structure of the mesh
 }; 
 
 NORI_NAMESPACE_END

@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <ImathPlatform.h>
 #include <tinyformat.h>
+#include<limits>
 
 /* Convenience definitions */
 #define NORI_NAMESPACE_BEGIN namespace nori {
@@ -63,6 +64,7 @@ template <typename Scalar, int Dimension>  struct TPoint;
 template <typename Point, typename Vector> struct TRay;
 template <typename Point>                  struct TBoundingStructure;
 template <typename Point>                  struct TBoundingBox;
+template <typename Point>                  struct TBoundingBugBox;
 template <typename Point>                  struct TBoundingSphere;
 
 /* Basic Nori data structures (vectors, points, rays, bounding boxes,
@@ -93,7 +95,6 @@ typedef TPoint<int, 1>              Point1i;
 typedef TPoint<int, 2>              Point2i;
 typedef TPoint<int, 3>              Point3i;
 typedef TPoint<int, 4>              Point4i;
-typedef TBoundingStructure<Point3f> BoundingStructure;
 typedef TBoundingBox<Point1f>       BoundingBox1f;
 typedef TBoundingBox<Point2f>       BoundingBox2f;
 typedef TBoundingBox<Point3f>       BoundingBox3f;
@@ -106,7 +107,9 @@ typedef TBoundingBox<Point1i>       BoundingBox1i;
 typedef TBoundingBox<Point2i>       BoundingBox2i;
 typedef TBoundingBox<Point3i>       BoundingBox3i;
 typedef TBoundingBox<Point4i>       BoundingBox4i;
+typedef TBoundingBugBox<Point3f>    BoundingBugBox;
 typedef TBoundingSphere<Point3f>    BoundingSphere;
+typedef TBoundingStructure<Point3f> BoundingStructure;
 typedef TRay<Point2f, Vector2f> Ray2f;
 typedef TRay<Point3f, Vector3f> Ray3f;
 

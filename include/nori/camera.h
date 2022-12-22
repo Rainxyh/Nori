@@ -6,20 +6,21 @@ NORI_NAMESPACE_BEGIN
 
 /**
  * \brief Generic camera interface
- * 
+ *
  * This class provides an abstract interface to cameras in Nori and
  * exposes the ability to sample their response function. By default, only
  * a perspective camera implementation exists, but you may choose to
- * implement other types (e.g. an environment camera, or a physically-based 
+ * implement other types (e.g. an environment camera, or a physically-based
  * camera model that simulates the behavior actual lenses)
  */
 class Camera : public NoriObject {
-public:
+   public:
     /**
-     * \brief Importance sample a ray according to the camera's response function
+     * \brief Importance sample a ray according to the camera's response
+     * function
      *
      * \param ray
-     *    A ray data structure to be filled with a position 
+     *    A ray data structure to be filled with a position
      *    and direction value
      *
      * \param samplePosition
@@ -35,24 +36,27 @@ public:
      *    This accounts for the difference in the camera response
      *    function and the sampling density.
      */
-    virtual Color3f sampleRay(Ray3f &ray,
-        const Point2f &samplePosition,
-        const Point2f &apertureSample) const = 0;
+    virtual Color3f sampleRay(Ray3f& ray,
+                              const Point2f& samplePosition,
+                              const Point2f& apertureSample) const = 0;
 
     /// Return the size of the output image in pixels
-    const Vector2i &getOutputSize() const { return m_outputSize; }
+    const Vector2i& getOutputSize() const { return m_outputSize; }
 
     /// Return the camera's reconstruction filter in image space
-    const ReconstructionFilter *getReconstructionFilter() const { return m_rfilter; }
+    const ReconstructionFilter* getReconstructionFilter() const {
+        return m_rfilter;
+    }
 
     /**
-     * \brief Return the type of object (i.e. Mesh/Camera/etc.) 
+     * \brief Return the type of object (i.e. Mesh/Camera/etc.)
      * provided by this instance
      * */
     EClassType getClassType() const { return ECamera; }
-protected:
+
+   protected:
     Vector2i m_outputSize;
-    ReconstructionFilter *m_rfilter;
+    ReconstructionFilter* m_rfilter;
 };
 
 NORI_NAMESPACE_END

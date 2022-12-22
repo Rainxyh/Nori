@@ -5,6 +5,16 @@
 
 NORI_NAMESPACE_BEGIN
 
+enum class BsdfType
+{
+	BSDF_DIFFUSE,
+	BSDF_MIRROR,
+	BSDF_DIELECTRIC,
+	BSDF_MICROFACET,
+	BSDF_ROUGHDIELECTRIC,
+	BSDF_NULL
+};
+
 /**
  * \brief Convenience data structure used to pass multiple
  * parameters to the evaluation and sampling routines in \ref BSDF
@@ -23,20 +33,29 @@ struct BSDFQueryRecord {
     EMeasure measure;
 
     /// Create a new record for sampling the BSDF
-    BSDFQueryRecord(const Vector3f &wi)
-        : wi(wi), eta(1.f), measure(EUnknownMeasure) { }
+    BSDFQueryRecord(const Vector3f& wi)
+        : wi(wi), eta(1.f), measure(EUnknownMeasure) {}
 
     /// Create a new record for querying the BSDF
-    BSDFQueryRecord(const Vector3f &wi,
-            const Vector3f &wo, EMeasure measure)
-        : wi(wi), wo(wo), eta(1.f), measure(measure) { }
+    BSDFQueryRecord(const Vector3f& wi, const Vector3f& wo, EMeasure measure)
+        : wi(wi), wo(wo), eta(1.f), measure(measure) {}
+
+    /// Additional information possibly needed by the BSDF
+    /// UV associated with the point
+    Point2f uv;
+
+    /// Point associated with the point
+    Point3f p;
+
+    /// pdf associated with this sample
+    float pdf;
 };
 
 /**
  * \brief Superclass of all bidirectional scattering distribution functions
  */
 class BSDF : public NoriObject {
-public:
+   public:
     /**
      * \brief Sample the BSDF and return the importance weight (i.e. the
      * value of the BSDF * cos(theta_o) divided by the probability density
@@ -47,10 +66,11 @@ public:
      *
      * \return The BSDF value divided by the probability density of the sample.
      *         The returned value also includes the cosine foreshortening
-     *         factor associated with the outgoing direction, when this 
+     *         factor associated with the outgoing direction, when this
      *         is appropriate. A zero value means that sampling failed.
      */
-    virtual Color3f sample(BSDFQueryRecord &bRec, const Point2f &sample) const = 0;
+    virtual Color3f sample(BSDFQueryRecord& bRec,
+                           const Point2f& sample) const = 0;
 
     /**
      * \brief Evaluate the BSDF for a pair of directions and measure
@@ -61,7 +81,7 @@ public:
      * \return
      *     The BSDF value, evaluated for each color channel
      */
-    virtual Color3f eval(const BSDFQueryRecord &bRec) const = 0;
+    virtual Color3f eval(const BSDFQueryRecord& bRec) const = 0;
 
     /**
      * \brief Compute the probability of sampling \c bRec.wo
@@ -77,7 +97,7 @@ public:
      *     A probability/density value expressed with respect
      *     to the specified measure
      */
-    virtual float pdf(const BSDFQueryRecord &bRec) const = 0;
+    virtual float pdf(const BSDFQueryRecord& bRec) const = 0;
 
     /**
      * \brief Return the type of object (i.e. Mesh/BSDF/etc.)

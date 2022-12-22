@@ -46,7 +46,7 @@ public:
                     const Color3f f = currBSDF->eval(bRec);
 
                     // Compute visibility;
-                    Ray3f shadowRay(its.p, eRec.wi, Epsilon, (1.0f - Epsilon) * eRec.dist);
+                    Ray3f shadowRay(its.p, -eRec.wi, Epsilon, (1.0f - Epsilon) * eRec.dist);
                     const float vis = scene->rayIntersect(shadowRay) ? 0.f : 1.f;
 
                     // compute other terms and the final color

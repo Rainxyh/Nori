@@ -9,7 +9,9 @@ while ignoring the actual material parameters (i.e. the surface's BSDF).*/
 class AvIntegrator : public Integrator
 {
 public:
-    AvIntegrator(const PropertyList &props) {}
+    AvIntegrator(const PropertyList &props) {
+        m_raylength = props.getFloat("length");
+    }
 
     Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &ray, size_t depth) const
     {
@@ -20,16 +22,16 @@ public:
     {
         Intersection its;
         if (!scene->rayIntersect(ray, its))
-            return Color3f(0.0f);
+            return WHITE;
 
-        Color3f color(1.f);
         Point3f p = its.p;
-        Vector3f wi = Warp::squareToCosineHemisphere(sampler->next2D());
-        wi = its.shFrame.toWorld(wi);
+        Vector3f wi = Warp::squareToUniformHemisphere(sampler->next2D());
+        
+        wi = its.toWorld(wi);
         float V = 1.f;
-        if (scene->rayIntersect(Ray3f(p + wi * (1e-5), wi)))
+        if (scene->rayIntersect(Ray3f(p, wi, Epsilon, m_raylength)))
             V = 0.f;
-        return color * V;
+        return Color3f(V);
     }
 
     std::string toString() const
@@ -40,6 +42,7 @@ public:
     }
 
 protected:
+    float m_raylength;
 };
 
 NORI_REGISTER_CLASS(AvIntegrator, "av");

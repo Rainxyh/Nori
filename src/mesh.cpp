@@ -8,12 +8,12 @@ NORI_NAMESPACE_BEGIN
 
 Mesh::Mesh()
 {
-    m_bbox = new BoundingBox3f();
+    m_bbugbox = new BoundingBugBox();
     m_bsphere = new BoundingSphere(); // associated with Accel, initial in WavefrontOBJ
 #define Box 1
 #define Sphere 0
 #if Box
-    m_BS = dynamic_cast<BoundingBox3f *>(m_bbox);
+    m_BS = dynamic_cast<BoundingBugBox *>(m_bbugbox);
 #else
     m_BS = dynamic_cast<BoundingSphere *>(m_bsphere);
 #endif
@@ -23,7 +23,7 @@ Mesh::~Mesh() {
     delete m_texture;
     delete m_bsdf;
     delete m_emitter;
-    delete m_bbox;
+    delete m_bbugbox;
     delete m_bsphere;
 }
 
@@ -42,6 +42,26 @@ void Mesh::activate() {
         }
         m_dpdf->normalize();
     }
+}
+
+void Mesh::samplePosition(Sampler* sampler, Point3f& point, Normal3f& normal) const {
+    size_t idx = m_dpdf->sample(sampler->next1D());
+    Point2f sample(sampler->next2D());
+    uint32_t i0 = m_F(0, idx), i1 = m_F(1, idx), i2 = m_F(2, idx);
+
+    // barycentric sampling of triangle.
+    float u1 = sqrt(sample.x());
+    float u = 1.0f - u1;
+    float v = sample.y() * u1;
+
+    const Point3f p0 = m_V.col(i0), p1 = m_V.col(i1), p2 = m_V.col(i2);
+    if (m_N.size() != 0) {
+        const Normal3f n0 = m_N.col(i0), n1 = m_N.col(i1), n2 = m_N.col(i2);
+        normal = (1.0f - u - v) * n0 + u * n1 + v * n2;
+    } else {
+        normal = (p1 - p0).cross(p2 - p0).normalized();
+    }
+    point = (1.0f - u - v) * p0 + u * p1 + v * p2;
 }
 
 void Mesh::uniformSample(Sampler* sampler, Point3f &point, Normal3f &normal, Point2f& texCoord) const{
@@ -70,41 +90,26 @@ void Mesh::uniformSample(Sampler* sampler, Point3f &point, Normal3f &normal, Poi
     }
     Vector2f xi(sampler->next2D());
     Point3f bary_cood(1.f - sqrt(1.f - xi[0]), xi[1] * sqrt(1.f - xi[0]), sqrt(1.f - xi[0]) - xi[1] * sqrt(1.f - xi[0]));
-    point = Point3f(a * bary_cood[0] + b * bary_cood[1] + c * bary_cood[2]);
-    normal = Normal3f(an * bary_cood[0] + bn * bary_cood[1] + cn * bary_cood[2]);
+    point    = Point3f(a   * bary_cood[0] + b   * bary_cood[1] + c   * bary_cood[2]);
+    normal   = Normal3f(an * bary_cood[0] + bn  * bary_cood[1] + cn  * bary_cood[2]);
     texCoord = Point2f(auv * bary_cood[0] + buv * bary_cood[1] + cuv * bary_cood[2]);
 }
 
 void Mesh::uniformSample(Sampler* sampler, Point3f &point, Normal3f &normal) const{
-    size_t idx = m_dpdf->sample(sampler->next1D());
-    Point3f a = m_V.col(m_F(0, idx)), b = m_V.col(m_F(1, idx)), c = m_V.col(m_F(2, idx));
-    Normal3f an, bn, cn;
-    /* m_N may not provided by the mesh */
-    if (m_N.cols())
-    {
-        an = m_N.col(m_F(0, idx));
-        bn = m_N.col(m_F(1, idx));
-        cn = m_N.col(m_F(2, idx));
-    }
-    else
-    {
-        an = (b - a).cross(c - a).normalized();
-        bn = (c - b).cross(a - b).normalized();
-        cn = (a - c).cross(b - c).normalized();
-    }
-    Vector2f xi(sampler->next2D());
-    Point3f bary_cood(1.f - sqrt(1.f - xi[0]), xi[1] * sqrt(1.f - xi[0]), sqrt(1.f - xi[0]) - xi[1] * sqrt(1.f - xi[0]));
-    point = Point3f(a * bary_cood[0] + b * bary_cood[1] + c * bary_cood[2]);
-    normal = Normal3f(an * bary_cood[0] + bn * bary_cood[1] + cn * bary_cood[2]);
+    Point2f tex = {};
+    uniformSample(sampler, point, normal, tex);
 }
 
+/**
+ * \brief Uniformly sample a position on the mesh with
+ * respect to surface area. Returns both position and normal
+ */
 void Mesh::uniformSample(Sampler* sampler, Point3f &point, Normal3f &normal, float &pdf) const{
     m_dpdf->sample(sampler->next1D(), pdf);
     uniformSample(sampler, point, normal);
 }
 
-float Mesh::surfaceArea() const
-{
+float Mesh::surfaceArea() const {
     return m_dpdf->getSum();
 }
 
@@ -154,6 +159,49 @@ bool Mesh::rayIntersect(const uint32_t index, const Ray3f &ray, float &u, float 
     return t >= ray.mint && t <= ray.maxt;
 }
 
+bool Mesh::rayMeshIntersect(const Ray3f& ray, Intersection& isect) const {
+    float u, v, t;
+    float min_t = INFINITY, min_u = 0.0f, min_v = 0.0f;
+    int min_id = -1;
+    bool intersected = false;
+    for (size_t i = 0; i < getTriangleCount(); i++) {
+        if (rayIntersect(i, ray, u, v, t)) {
+            if (t < min_t) {
+                min_id = i;
+                min_t = t;
+                min_u = u;
+                min_v = v;
+                intersected = true;
+            }
+        }
+    }
+
+    if (min_id != -1) {
+        isect.p = ray(min_t);
+        isect.t = min_t;
+        isect.mesh = this;
+
+        // compose the normal for a frame
+        uint32_t i0 = m_F(0, min_id), i1 = m_F(1, min_id), i2 = m_F(2, min_id);
+        const Point3f p0 = m_V.col(i0), p1 = m_V.col(i1), p2 = m_V.col(i2);
+        Normal3f surface_normal = (p1 - p0).cross(p2 - p0).normalized();
+        isect.geoFrame = Frame(surface_normal);
+        isect.shFrame = isect.geoFrame;
+        isect.uv = Vector2f(min_u, min_v);
+    }
+
+    return intersected;
+}
+
+bool Mesh::rayMeshIntersectP(const Ray3f& ray) const {
+        float u, v, t;
+        for (size_t i = 0; i < getTriangleCount(); i++) {
+                if (rayIntersect(i, ray, u, v, t))
+                        return true;
+        }
+        return false;
+}
+
 BoundingBox3f Mesh::getBoundingBox(uint32_t index) const {
     BoundingBox3f result(m_V.col(m_F(0, index)));
     result.expandBy(m_V.col(m_F(1, index)));
@@ -161,17 +209,22 @@ BoundingBox3f Mesh::getBoundingBox(uint32_t index) const {
     return result;
 }
 
+BoundingBugBox Mesh::getBoundingBugBox(uint32_t index) const {
+    BoundingBugBox result(m_V.col(m_F(0, index)));
+    result.expandBy(m_V.col(m_F(1, index)));
+    result.expandBy(m_V.col(m_F(2, index)));
+    return result;
+}
 BoundingSphere Mesh::getBoundingSphere(uint32_t index) const {
     BoundingSphere result(m_V.col(m_F(0, index)));
     result.expandBy(m_V.col(m_F(1, index)));
     result.expandBy(m_V.col(m_F(2, index)));
     return result;
 }
-
 BoundingStructure *Mesh::getBoundingStructure(uint32_t index) const{
     BoundingStructure *result = nullptr;
-    if (typeid(BoundingBox3f) == typeid(*this->m_BS))
-        result = dynamic_cast<BoundingBox3f *>(new BoundingBox3f(Mesh::getBoundingBox(index)));
+    if (typeid(BoundingBugBox) == typeid(*this->m_BS))
+        result = dynamic_cast<BoundingBugBox *>(new BoundingBugBox(Mesh::getBoundingBugBox(index)));
     else if (typeid(BoundingSphere) == typeid(*this->m_BS))
         result = dynamic_cast<BoundingSphere *>(new BoundingSphere(Mesh::getBoundingSphere(index)));
     return result;

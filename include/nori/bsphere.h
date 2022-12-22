@@ -1,44 +1,39 @@
 #pragma once
 
-#include <nori/ray.h>
 #include <nori/bstructure.h>
+#include <nori/ray.h>
 
 NORI_NAMESPACE_BEGIN
 
 template <typename _PointType>
-struct TBoundingSphere : TBoundingStructure<_PointType>
-{
-    typedef _PointType                             PointType;
-    typedef typename PointType::Scalar             Scalar;
-    typedef typename PointType::VectorType         VectorType;
-    typedef TBoundingStructure<PointType>          BS;
+struct TBoundingSphere : TBoundingStructure<_PointType> {
+    typedef _PointType PointType;
+    typedef typename PointType::Scalar Scalar;
+    typedef typename PointType::VectorType VectorType;
+    typedef TBoundingStructure<PointType> BS;
 
-    TBoundingSphere()
-    {
-        reset();
-    }
+    TBoundingSphere() { reset(); }
     ~TBoundingSphere() {}
 
     /// Create a collapsed bounding sphere from a single point
-    TBoundingSphere(const PointType &ori)
-        : ori(ori) {}
-    TBoundingSphere(const PointType &ori, const Scalar radius)
+    TBoundingSphere(const PointType& ori) : ori(ori) {}
+    TBoundingSphere(const PointType& ori, const Scalar radius)
         : ori(ori), radius(radius) {}
 
     template <typename PointType>
-    TBoundingSphere &operator=(const TBoundingSphere<PointType> &bsphere){
+    TBoundingSphere& operator=(const TBoundingSphere<PointType>& bsphere) {
         this->ori = bsphere.ori;
         this->radius = bsphere.radius;
         return *this;
     }
 
     /// Test for equality against another bounding sphere
-    bool operator==(const TBoundingSphere &bsphere) const {
+    bool operator==(const TBoundingSphere& bsphere) const {
         return this->ori == bsphere.ori && this->radius == bsphere.radius;
     }
 
     /// Test for inequality against another bounding sphere
-    bool operator!=(const TBoundingSphere &bsphere) const {
+    bool operator!=(const TBoundingSphere& bsphere) const {
         return this->ori != bsphere.ori || this->radius != bsphere.radius;
     }
 
@@ -48,19 +43,13 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
     }
 
     /// Calculate the n-dimensional volume of the bounding sphere
-    Scalar getVolume() const {
-        return 4.f / 3 * M_PI * pow(this->radius, 3);
-    }
+    Scalar getVolume() const { return 4.f / 3 * M_PI * pow(this->radius, 3); }
 
     /// Calculate the n-1 dimensional volume of the boundary
-    Scalar getSurfaceArea() const {
-        return 4.f * M_PI * pow(this->radius, 2);
-    }
+    Scalar getSurfaceArea() const { return 4.f * M_PI * pow(this->radius, 2); }
 
     /// Return the center point
-    PointType getCenter() const {
-        return this->ori;
-    }
+    PointType getCenter() const { return this->ori; }
 
     /**
      * \brief Check whether a point lies \a on or \a inside the bounding sphere
@@ -70,7 +59,7 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
      * \param strict Set this parameter to \c true if the bounding
      *               sphere boundary should be excluded in the test
      */
-    bool contains(const PointType &p, bool strict = false) const {
+    bool contains(const PointType& p, bool strict = false) const {
         if (strict) {
             return (p - this->ori).squaredNorm() < this->radius;
         } else {
@@ -79,25 +68,27 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
     }
 
     /**
-     * \brief Check whether a specified bounding sphere lies \a on or \a within 
+     * \brief Check whether a specified bounding sphere lies \a on or \a within
      * the current bounding sphere
      *
-     * Note that by definition, an 'invalid' bounding sphere (where min=\f$\infty\f$
-     * and max=\f$-\infty\f$) does not cover any space. Hence, this method will always 
-     * return \a true when given such an argument.
+     * Note that by definition, an 'invalid' bounding sphere (where
+     * min=\f$\infty\f$ and max=\f$-\infty\f$) does not cover any space. Hence,
+     * this method will always return \a true when given such an argument.
      *
      * \param strict Set this parameter to \c true if the bounding
      *               sphere boundary should be excluded in the test
      */
-    bool contains(const TBoundingSphere &bsphere, bool strict = false) const {
+    bool contains(const TBoundingSphere& bsphere, bool strict = false) const {
         if (strict) {
-            return (this->ori - bsphere.ori).norm() + bsphere.radius < this->radius;
+            return (this->ori - bsphere.ori).norm() + bsphere.radius <
+                   this->radius;
         } else {
-            return (this->ori - bsphere.ori).norm() + bsphere.radius <= this->radius;
+            return (this->ori - bsphere.ori).norm() + bsphere.radius <=
+                   this->radius;
         }
     }
-    bool contains(BS &_bsphere, bool strict = false) const {
-        TBoundingSphere &bsphere = dynamic_cast<TBoundingSphere &>(_bsphere);
+    bool contains(BS& _bsphere, bool strict = false) const {
+        TBoundingSphere& bsphere = dynamic_cast<TBoundingSphere&>(_bsphere);
         return contains(bsphere, strict);
     }
 
@@ -109,15 +100,15 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
      *
      * \return \c true If overlap was detected.
      */
-    bool overlaps(const TBoundingSphere &bsphere, bool strict = false) const {
+    bool overlaps(const TBoundingSphere& bsphere, bool strict = false) const {
         if (strict) {
             return (this->ori - bsphere.ori).norm() < this->radius;
         } else {
             return (this->ori - bsphere.ori).norm() <= this->radius;
         }
     }
-    bool overlaps(BS &_bsphere, bool strict = false) const {
-        TBoundingSphere &bsphere = dynamic_cast<TBoundingSphere &>(_bsphere);
+    bool overlaps(BS& _bsphere, bool strict = false) const {
+        TBoundingSphere& bsphere = dynamic_cast<TBoundingSphere&>(_bsphere);
         return overlaps(bsphere, strict);
     }
 
@@ -125,7 +116,7 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
      * \brief Calculate the smallest squared distance between
      * the axis-aligned bounding sphere and the point \c p.
      */
-    Scalar squaredDistanceTo(const PointType &p) const {
+    Scalar squaredDistanceTo(const PointType& p) const {
         return pow(distanceTo(p), 2);
     }
 
@@ -133,7 +124,7 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
      * \brief Calculate the smallest distance between
      * the axis-aligned bounding sphere and the point \c p.
      */
-    Scalar distanceTo(const PointType &p) const {
+    Scalar distanceTo(const PointType& p) const {
         Scalar result = (this->ori - p).norm() - this->radius;
         return result >= 0 ? result : 0;
     }
@@ -142,11 +133,11 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
      * \brief Calculate the smallest square distance between
      * the axis-aligned bounding sphere and \c bsphere.
      */
-    Scalar squaredDistanceTo(const TBoundingSphere &bsphere) const {
+    Scalar squaredDistanceTo(const TBoundingSphere& bsphere) const {
         return pow(distanceTo(bsphere), 2);
     }
-    Scalar squaredDistanceTo(BS &_bsphere) const {
-        TBoundingSphere &bsphere = dynamic_cast<TBoundingSphere &>(_bsphere);
+    Scalar squaredDistanceTo(BS& _bsphere) const {
+        TBoundingSphere& bsphere = dynamic_cast<TBoundingSphere&>(_bsphere);
         return squaredDistanceTo(bsphere);
     }
 
@@ -154,12 +145,13 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
      * \brief Calculate the smallest distance between
      * the axis-aligned bounding sphere and \c bsphere.
      */
-    Scalar distanceTo(const TBoundingSphere &bsphere) const {
-        Scalar result = (this->ori - bsphere.ori).norm() - (this->radius + bsphere.radius);
+    Scalar distanceTo(const TBoundingSphere& bsphere) const {
+        Scalar result =
+            (this->ori - bsphere.ori).norm() - (this->radius + bsphere.radius);
         return result >= 0 ? result : 0;
     }
-    Scalar distanceTo(BS &_bsphere) const {
-        TBoundingSphere &bsphere = dynamic_cast<TBoundingSphere &>(_bsphere);
+    Scalar distanceTo(BS& _bsphere) const {
+        TBoundingSphere& bsphere = dynamic_cast<TBoundingSphere&>(_bsphere);
         return distanceTo(bsphere);
     }
 
@@ -172,69 +164,60 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
      * \endcode
      * holds along each dimension \c dim.
      */
-    bool isValid() const {
-        return radius >= 0;
-    }
+    bool isValid() const { return radius >= 0; }
 
     /// Check whether this bounding sphere has collapsed to a single point
-    bool isPoint() const {
-        return radius == 0;
-    }
+    bool isPoint() const { return radius == 0; }
 
     /// Check whether this bounding sphere has any associated volume
-    bool hasVolume() const {
-        return !isPoint();
-    }
+    bool hasVolume() const { return !isPoint(); }
 
     /// Clip to another bounding sphere
-    void clip(const TBoundingSphere &bsphere) {
+    void clip(const TBoundingSphere& bsphere) {
         Scalar clip_radius = (this->ori - bsphere.ori).norm() + bsphere.radius;
-        if(clip_radius<this->radius){
+        if (clip_radius < this->radius) {
             this->radius = clip_radius;
-        }
-        else {
-            std::cerr<<"clip error, maybe you need expand ?"<<std::endl;
+        } else {
+            std::cerr << "clip error, maybe you need expand ?" << std::endl;
         }
     }
-    void clip(BS &_bsphere) {
-        TBoundingSphere &bsphere = dynamic_cast<TBoundingSphere &>(_bsphere);
+    void clip(BS& _bsphere) {
+        TBoundingSphere& bsphere = dynamic_cast<TBoundingSphere&>(_bsphere);
         clip(bsphere);
     }
 
     /// Expand the bounding sphere to contain another point, fixed centor
-    void expandBy(const PointType &p)
-    {
-        if (this->radius < -Epsilon)
-        {
+    void expandBy(const PointType& p) {
+        if (this->radius < -Epsilon) {
             this->ori = p;
             this->radius = 0.f;
-        }
-        else
-        {
-            this->radius = (this->ori - p).norm() > this->radius ? (this->ori - p).norm() : this->radius;
+        } else {
+            this->radius = (this->ori - p).norm() > this->radius
+                               ? (this->ori - p).norm()
+                               : this->radius;
         }
     }
 
-    /// Expand the bounding sphere to contain another bounding sphere, fixed centor
-    void expandBy(const TBoundingSphere &bsphere)
-    {
-        if (this->radius < -Epsilon)
-        {
+    /// Expand the bounding sphere to contain another bounding sphere, fixed
+    /// centor
+    void expandBy(const TBoundingSphere& bsphere) {
+        if (this->radius < -Epsilon) {
             *this = bsphere;
-        }
-        else
-        {
-            this->radius = (this->ori - bsphere.ori).norm() + bsphere.radius > this->radius ? (this->ori - bsphere.ori).norm() + bsphere.radius : radius;
+        } else {
+            this->radius =
+                (this->ori - bsphere.ori).norm() + bsphere.radius > this->radius
+                    ? (this->ori - bsphere.ori).norm() + bsphere.radius
+                    : radius;
         }
     }
-    void expandBy(BS &_bsphere)
-    {
-        TBoundingSphere &bsphere = dynamic_cast<TBoundingSphere &>(_bsphere);
+    void expandBy(BS& _bsphere) {
+        TBoundingSphere& bsphere = dynamic_cast<TBoundingSphere&>(_bsphere);
         expandBy(bsphere);
     }
 
     /// Merge two bounding spherees, moved centor
-    static TBoundingSphere merge(const TBoundingSphere &bsphere1, const TBoundingSphere &bsphere2) {
+    static TBoundingSphere merge(const TBoundingSphere& bsphere1,
+                                 const TBoundingSphere& bsphere2) {
         PointType left, rigth, centor;
         Vector3f OC = bsphere2.ori - bsphere1.ori;
         rigth = bsphere2.ori + OC.normalized() * bsphere2.radius;
@@ -244,21 +227,22 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
         return TBoundingSphere(centor, merged_radius);
     }
     // BS*  merge(BS &_bsphere1, BS &_bsphere2) {
-    //     TBoundingSphere &bsphere1 = dynamic_cast<TBoundingSphere &>(_bsphere1);
-    //     TBoundingSphere &bsphere2 = dynamic_cast<TBoundingSphere &>(_bsphere2);
-    //     return merge(bsphere1, bsphere2);
+    //     TBoundingSphere &bsphere1 = dynamic_cast<TBoundingSphere
+    //     &>(_bsphere1); TBoundingSphere &bsphere2 =
+    //     dynamic_cast<TBoundingSphere &>(_bsphere2); return merge(bsphere1,
+    //     bsphere2);
     // }
 
     /// Merge bounding sphere list
-    /// How to construct a sphere including any 6 points and make it the smallest ? Find the minimum and maximum points.
-    static TBoundingSphere merge(const std::vector<TBoundingSphere> &bsphere_list) {
-        PointType merged_min, merged_max; // 1st axis, 2nd max and min
+    /// How to construct a sphere including any 6 points and make it the
+    /// smallest ? Find the minimum and maximum points.
+    static TBoundingSphere merge(
+        const std::vector<TBoundingSphere>& bsphere_list) {
+        PointType merged_min, merged_max;  // 1st axis, 2nd max and min
         merged_min.setConstant(std::numeric_limits<Scalar>::infinity());
         merged_max.setConstant(-std::numeric_limits<Scalar>::infinity());
-        for (size_t i = 0; i < bsphere_list.size(); ++i)
-        {
-            for (size_t j = 0; j < 3; ++j)
-            {
+        for (size_t i = 0; i < bsphere_list.size(); ++i) {
+            for (size_t j = 0; j < 3; ++j) {
                 PointType min_axis, max_axis;
                 max_axis = min_axis = bsphere_list[i].getCenter();
                 min_axis[j] -= bsphere_list[i].radius;
@@ -277,19 +261,23 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
         if (!isValid())
             return "BoundingSphere[invalid]";
         else
-            return tfm::format("BoundingSphere[ori=%s, rad=%f]", this->ori.toString(), this->radius);
+            return tfm::format("BoundingSphere[ori=%s, rad=%f]",
+                               this->ori.toString(), this->radius);
     }
 
-    bool solveQuadratic(const float a, const float b, const float c, float &x0, float &x1) const
-    {
+    bool solveQuadratic(const float a,
+                        const float b,
+                        const float c,
+                        float& x0,
+                        float& x1) const {
         float discr = b * b - 4 * a * c;
         if (discr < 0)
             return false;
         else if (discr == 0)
             x0 = x1 = -0.5 * b / a;
-        else
-        {
-            float q = (b > 0) ? -0.5 * (b + sqrt(discr)) : -0.5 * (b - sqrt(discr));
+        else {
+            float q =
+                (b > 0) ? -0.5 * (b + sqrt(discr)) : -0.5 * (b - sqrt(discr));
             x0 = q / a;
             x1 = c / q;
         }
@@ -299,8 +287,7 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
         return true;
     }
 
-    bool raySphereInsersect(const Ray3f &ray, float &t0, float &t1) const
-    {
+    bool raySphereInsersect(const Ray3f& ray, float& t0, float& t1) const {
         // Input(o, d, c, r)
         // Return ({REJECT, INTERSECT}, t, p)
         // l = c - o;
@@ -338,24 +325,23 @@ struct TBoundingSphere : TBoundingStructure<_PointType>
         if (t0 > t1)
             std::swap(t0, t1);
 
-        if (t0 < 0)
-        {
-            t0 = t1; // if t0 is less than 0 use t1 instead
+        if (t0 < 0) {
+            t0 = t1;  // if t0 is less than 0 use t1 instead
             if (t0 < 0)
-                return false; // If both t0 and t1 are negative, return false
+                return false;  // If both t0 and t1 are negative, return false
         }
         return true;
     }
 
     /// Check if a ray intersects a bounding sphere
-    bool rayIntersect(const Ray3f &ray) const
-    {
+    bool rayIntersect(const Ray3f& ray) const {
         float t0, t1;
         return raySphereInsersect(ray, t0, t1);
     }
 
-    /// Return the overlapping region of the bounding sphere and an unbounded ray
-    bool rayIntersect(const Ray3f &ray, float &nearT, float &farT) const {
+    /// Return the overlapping region of the bounding sphere and an unbounded
+    /// ray
+    bool rayIntersect(const Ray3f& ray, float& nearT, float& farT) const {
         float t0, t1;
         if (!raySphereInsersect(ray, t0, t1))
             return false;

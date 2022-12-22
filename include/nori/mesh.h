@@ -2,6 +2,7 @@
 #include <nori/object.h>
 #include <nori/frame.h>
 #include <nori/bbox.h>
+#include <nori/bbugbox.h>
 #include <nori/bsphere.h>
 #include <nori/bstructure.h>
 #include <nori/dpdf.h>
@@ -65,6 +66,8 @@ public:
     /// Initialize internal data structures (called once by the XML parser)
     virtual void activate();
 
+    void samplePosition(Sampler* sampler, Point3f& p, Normal3f& n) const ;
+
     void uniformSample(Sampler *sampler, Point3f &point, Normal3f &normal) const;
 
     void uniformSample(Sampler *sampler, Point3f &point, Normal3f &normal, Point2f& texCoord) const;
@@ -85,11 +88,13 @@ public:
 
     // Return an axis-aligned bounding box of the entire mesh
     BoundingBox3f     *getBoundingBox()       const { return m_bbox; }
+    BoundingBugBox    *getBoundingBugBox()    const { return m_bbugbox; }
     BoundingSphere    *getBoundingSphere()    const { return m_bsphere; }
     BoundingStructure *getBoundingStructure() const { return m_BS; }
 
     // Return an axis-aligned bounding box containing the given triangle
     BoundingBox3f      getBoundingBox(uint32_t index)       const;
+    BoundingBugBox     getBoundingBugBox(uint32_t index)    const;
     BoundingSphere     getBoundingSphere(uint32_t index)    const;
     BoundingStructure *getBoundingStructure(uint32_t index) const;
 
@@ -122,6 +127,12 @@ public:
      *   \c true if an intersection has been detected
      */
     bool rayIntersect(uint32_t index, const Ray3f &ray, float &u, float &v, float &t) const;
+
+    // Computes a ray-mesh intersection test, returning the point to the nearest intersection on the mesh.
+	bool rayMeshIntersect(const Ray3f& ray, Intersection& isect) const;
+
+	// Computes a shadow ray mesh intersection test -> returns true on the first intersection found
+	bool rayMeshIntersectP(const Ray3f& ray) const;
 
     /// Return a pointer to the vertex positions
     const MatrixXf &getVertexPositions() const { return m_V; }
@@ -181,9 +192,10 @@ protected:
     std::vector<std::string> face_idx_2_mtl_map; ///< Faces
     NoriTexture       *m_texture = nullptr;      ///< Texture of the mesh
     BSDF              *m_bsdf    = nullptr;      ///< BSDF of the surface
-    Emitter         *m_emitter = nullptr;      ///< Associated emitter, if any
+    Emitter           *m_emitter = nullptr;      ///< Associated emitter, if any
     DiscretePDF       *m_dpdf    = nullptr;      ///< Discrete probability density
     BoundingBox3f     *m_bbox    = nullptr;      ///< Bounding box of the mesh
+    BoundingBugBox    *m_bbugbox = nullptr;      ///< Bounding box of the mesh
     BoundingSphere    *m_bsphere = nullptr;      ///< Bounding sphere of the mesh
     BoundingStructure *m_BS      = nullptr;      ///< Bounding structure of the mesh
 }; 

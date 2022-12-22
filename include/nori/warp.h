@@ -10,45 +10,58 @@ class Warp {
 public:
     /// Dummy warping function: takes uniformly distributed points in a square and just returns them
     static Point2f squareToUniformSquare(const Point2f &sample);
-
     /// Probability density of \ref squareToUniformSquare()
     static float squareToUniformSquarePdf(const Point2f &p);
 
     /// Sample a 2D tent distribution
     static Point2f squareToTent(const Point2f &sample);
-
     /// Probability density of \ref squareToTent()
     static float squareToTentPdf(const Point2f &p);
 
     /// Uniformly sample a vector on a 2D disk with radius 1, centered around the origin
     static Point2f squareToUniformDisk(const Point2f &sample);
-
     /// Probability density of \ref squareToUniformDisk()
     static float squareToUniformDiskPdf(const Point2f &p);
+    
+    /// Uniformly sample a vector on a Cylinder with radius 1, height 1 and centered around the origin
+    static Vector3f squareToUniformCylinder(const Point2f& sample);
+    /// Probability density of \ref squareToUniformCylinder()
+    static Vector3f squareToUniformCylinderPdf(const Point2f& sample);
 
     /// Uniformly sample a vector on the unit sphere with respect to solid angles
     static Vector3f squareToUniformSphere(const Point2f &sample);
-
     /// Probability density of \ref squareToUniformSphere()
     static float squareToUniformSpherePdf(const Vector3f &v);
 
     /// Uniformly sample a vector on the unit hemisphere around the pole (0,0,1) with respect to solid angles
     static Vector3f squareToUniformHemisphere(const Point2f &sample);
-
     /// Probability density of \ref squareToUniformHemisphere()
     static float squareToUniformHemispherePdf(const Vector3f &v);
 
     /// Uniformly sample a vector on the unit hemisphere around the pole (0,0,1) with respect to projected solid angles
     static Vector3f squareToCosineHemisphere(const Point2f &sample);
-
     /// Probability density of \ref squareToCosineHemisphere()
     static float squareToCosineHemispherePdf(const Vector3f &v);
 
+    /// Uniformly sample a vector on the unit square into uniformly distributed points on the spherical cap centered at the origin and oriented in direction (0,0,1)
+    static Vector3f squareToUniformSphereCap(const Point2f &sample, float cosThetaMax);
+    /// Probability density of \ref squareToUniformSphereCap()
+    static float squareToUniformSphereCapPdf(const Vector3f &v, float cosThetaMax);
+
     /// Warp a uniformly distributed square sample to a Beckmann distribution * cosine for the given 'alpha' parameter
     static Vector3f squareToBeckmann(const Point2f &sample, float alpha);
-
     /// Probability density of \ref squareToBeckmann()
     static float squareToBeckmannPdf(const Vector3f &m, float alpha);
+
+    /// Warp a uniformly distributed square sample to a GGX distribution
+    static Vector3f squareToGgx(const Point2f &sample, float alpha_g);
+    /// Probability density of \ref squareToGgx()
+    static float squareToGgxPdf(const Vector3f &m, float alpha_g);
+
+    /// Warp a uniformly distributed square sample to a Phong distribution
+    static Vector3f squareToPhong(const Point2f &sample, float alpha_p);
+    /// Probability density of \ref Phong()
+    static float squareToPhongPdf(const Vector3f &m, float alpha_p);
 };
 
 NORI_NAMESPACE_END

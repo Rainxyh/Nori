@@ -1,6 +1,8 @@
 #include <nori/integrator.h>
 #include <nori/scene.h>
-#include <nori/warp.h>
+#include <nori/emitter.h>
+#include <nori/bsdf.h>
+#include <nori/sampler.h>
 
 NORI_NAMESPACE_BEGIN
 
@@ -18,22 +20,29 @@ public:
     {
         Intersection its;
         if (!scene->rayIntersect(ray, its))
-            return Color3f(0.0f);
-
-
-        Emitter* rand_emitter = scene->getRandomEmitter();
-
-        Color3f color(0.f);
+            return BLACK;
         Point3f p = its.p;
-        Vector3f wi = Warp::squareToCosineHemisphere(sampler->next2D());
-        float cosTheta = wi.z();
-        float pdf = Warp::squareToCosineHemispherePdf(wi);
-        wi = its.shFrame.toWorld(wi);
-        float V = 1.f;
-        if (scene->rayIntersect(Ray3f(p + wi * (1e-5), wi)))
-            V = 0.f;
-        color += V * cosTheta * INV_PI / pdf;
-        return color;
+        Vector3f wo = (-ray.d).normalized(), wi;
+        std::vector<Emitter*> emitters = scene->getEmitterList();
+        Color3f Lo(0.f);
+        for (size_t i = 0; i < emitters.size(); ++i)
+        {
+            EmitterQueryRecord lRec;
+            lRec.ref = p;
+            emitters[i]->sample(lRec, sampler);
+            wi = -lRec.wi;
+            float V = 1.f;
+
+            if (scene->rayIntersect(Ray3f(p, wi, Epsilon, (1.0f - Epsilon) * lRec.dist)))
+                V = 0.f;
+            BSDFQueryRecord bRec(its.toLocal(wi), its.toLocal(wo), ESolidAngle);
+            Color3f fr = its.mesh->getBSDF()->eval(bRec);
+            Color3f Li = emitters[i]->getRadiance() * INV_FOURPI * (1.0f / (lRec.dist * lRec.dist));
+            float cosTheta = its.toLocal(wi).z();
+
+            Lo += V * fr * Li * cosTheta;
+        }
+        return Lo; 
     }
 
     std::string toString() const

@@ -1,9 +1,39 @@
 #include <nori/accel.h>
+#include <chrono>
 
 NORI_NAMESPACE_BEGIN
 
 void Accel::build()
 {
+    std::cout << "Building accel structure" << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    std::vector<std::vector<uint32_t>> triangle_list;
+    BoundingBugBox *bbugbox = new BoundingBugBox();
+    BoundingSphere *bsphere = new BoundingSphere();
+    BoundingStructure *BS = nullptr;
+    for (size_t i = 0; i < m_meshes.size(); ++i)
+    {
+        uint32_t *index_list = (uint32_t *)malloc(m_meshes[i]->getTriangleCount() * sizeof(uint32_t));
+        for (size_t j = 0; j < m_meshes[i]->getTriangleCount(); ++j)
+            index_list[j] = j;
+        std::vector<uint32_t> triangle_vec(index_list, index_list + m_meshes[i]->getTriangleCount());
+        triangle_list.push_back(triangle_vec);
+        if (typeid(BoundingBugBox) == typeid(*m_meshes[i]->getBoundingStructure()))
+        {
+            bbugbox->expandBy(*m_meshes[i]->getBoundingBugBox());
+            BS = dynamic_cast<BoundingBugBox *>(bbugbox);
+        }
+        else if (typeid(BoundingSphere) == typeid(*m_meshes[i]->getBoundingStructure()))
+        {
+            bsphere->expandBy(*m_meshes[i]->getBoundingSphere());
+            BS = dynamic_cast<BoundingSphere *>(bsphere);
+        }
+    }
+    this->setNode(this->build(BS, triangle_list, 0));
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << tfm::format("Accel structure build successfully! [depth %d, innodes %d, leaves %d]", this->getTreeDepth(), this->getTreeNodeNum(), this->getTreeLeafNum()) << std::endl;
+    std::cout << "Accel structure build time:" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms\n";
+
     /* Brute force search through all triangles */
     // for (uint32_t idx = 0; idx < m_meshes->getTriangleCount(); ++idx) {
     //     float u, v, t;
@@ -21,7 +51,7 @@ void Accel::build()
     // }
 }
 
-Node *BVH::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *BugVH::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     if (!BS)
     {
@@ -31,23 +61,23 @@ Node *BVH::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> trian
     }
     Node *result = nullptr;
     // BoundingSphere *sphere = dynamic_cast<BoundingSphere *>(BS);
-    // BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
-    if (typeid(BoundingBox3f) == typeid(*BS))
+    // BoundingBugBox *bugbox = dynamic_cast<BoundingBugBox *>(BS);
+    if (typeid(BoundingBugBox) == typeid(*BS))
     {
-        std::cout << "Using BoundingBox Accel Structure (BVH)." << std::endl;
-        BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
-        result = BVH::build(box, triangle_list, depth);
+        std::cout << "Using BoundingBugBox Accel Structure (BVH)." << std::endl;
+        BoundingBugBox *box = dynamic_cast<BoundingBugBox *>(BS);
+        result = BugVH::build(box, triangle_list, depth);
     }
     else if (typeid(BoundingSphere) == typeid(*BS))
     {
         std::cout << "Using BoundingSphere Accel Structure (BVH)." << std::endl;
         BoundingSphere *sphere = dynamic_cast<BoundingSphere *>(BS);
-        result = BVH::build(sphere, triangle_list, depth);
+        result = BugVH::build(sphere, triangle_list, depth);
     }
     return result;
 }
 
-Node *BVH::build(BoundingSphere *sphere, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *BugVH::build(BoundingSphere *sphere, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     if (!triangle_list.size())
         return nullptr;
@@ -126,7 +156,7 @@ Node *BVH::build(BoundingSphere *sphere, std::vector<std::vector<uint32_t>> tria
     return node;
 }
 
-Node *BVH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *BugVH::build(BoundingBugBox *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     if (!triangle_list.size())
         return nullptr;
@@ -137,7 +167,7 @@ Node *BVH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
         return nullptr;
     this->m_maxDepth = std::max(m_maxDepth, depth);
     Node *node = new Node(m_Dim);
-    node->BS = node->bbox = box;
+    node->BS = node->bbugbox = box;
     node->triangle_list = triangle_list;                 // 1st dim meshes pre scene, 2nd dim triangles pre mesh
     if (triangle_num < 30 || box->getVolume() < Epsilon) // leaf node
     {
@@ -149,15 +179,19 @@ Node *BVH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
     }
     ++this->m_innerNodeNum; // internal node
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
-    uint8_t chosen_axis = depth % 3;
     Point3f box_min = box->getCorner(0), box_max = box->getCorner(7);
+    Point3f std_box = box_max - box_min;
+    uint16_t chosen_axis = std_box.maxAxis();
     float axis_mid = ((box_max + box_min) / 2)[chosen_axis];
-    BoundingBox3f *child_bbox_list[m_Dim];
+    BoundingBugBox *child_bbox_list[m_Dim];
     Point3f child_box_min = box_min, child_box_max = box_max;
     child_box_min[chosen_axis] = axis_mid;
     child_box_max[chosen_axis] = axis_mid;
-    child_bbox_list[0] = new BoundingBox3f(box_min, child_box_max); // box_min and box_min move along the positive direction of the corresponding axis to the corresponding distance from the midpoint
-    child_bbox_list[1] = new BoundingBox3f(child_box_min, box_max); // box_min and box_min move along the negative direction of the corresponding axis to the corresponding distance from the midpoint
+    child_bbox_list[0] = new BoundingBugBox(); 
+    child_bbox_list[1] = new BoundingBugBox(); 
+    // child_bbox_list[0] = new BoundingBugBox(box_min, child_box_max); // box_min and box_min move along the positive direction of the corresponding axis to the corresponding distance from the midpoint
+    // child_bbox_list[1] = new BoundingBugBox(child_box_min, box_max); // box_min and box_min move along the negative direction of the corresponding axis to the corresponding distance from the midpoint
+    std::vector<std::pair<float, std::pair<int, int>>> triangle_center_list;
     for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx)
     {
         for (size_t i = 0; i < m_Dim; ++i)
@@ -167,13 +201,35 @@ Node *BVH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
         for (size_t triangle_idx = 0; triangle_idx < triangle_list[mesh_idx].size(); ++triangle_idx)
         {
             uint32_t triangle_idx_in_mesh_buffer = triangle_list[mesh_idx][triangle_idx];
-            BoundingBox3f triangle_bbox = m_meshes[mesh_idx]->getBoundingBox(triangle_idx_in_mesh_buffer);
+            BoundingBugBox triangle_bbox = m_meshes[mesh_idx]->getBoundingBugBox(triangle_idx_in_mesh_buffer);
             Point3f prim_center = triangle_bbox.getCenter();
-            uint8_t switch_0_1 = 1;
-            if (prim_center[chosen_axis] < axis_mid)
-                switch_0_1 = 0;
-            child_bbox_list[switch_0_1]->expandBy(triangle_bbox);
-            regional_division_triangle_list[switch_0_1][mesh_idx].push_back(triangle_idx_in_mesh_buffer);
+            triangle_center_list.push_back(std::make_pair<float, std::pair<int, int>>(std::move(prim_center[chosen_axis]), std::make_pair<int, int>(mesh_idx, triangle_idx_in_mesh_buffer)));
+            // uint8_t switch_0_1 = 1;
+            // if (prim_center[chosen_axis] < axis_mid)
+            //     switch_0_1 = 0;
+            // child_bbox_list[switch_0_1]->expandBy(triangle_bbox);
+            // regional_division_triangle_list[switch_0_1][mesh_idx].push_back(triangle_idx_in_mesh_buffer);
+        }
+    }
+
+    nth_element(triangle_center_list.begin(), triangle_center_list.begin() + triangle_center_list.size() / 2, triangle_center_list.end(),
+            [](const std::pair<float, std::pair<int, int>> &a, const std::pair<float, std::pair<int, int>> &b){
+                if(a.first<b.first)return true;
+                return false; });
+
+    for(size_t i=0;i<triangle_center_list.size();++i){
+        size_t mesh_idx = triangle_center_list[i].second.first, triangle_idx_in_mesh_buffer = triangle_center_list[i].second.second;
+        if (i < triangle_center_list.size() / 2)
+        {
+            regional_division_triangle_list[0][mesh_idx].push_back(triangle_idx_in_mesh_buffer);
+            BoundingBugBox triangle_bbox = m_meshes[mesh_idx]->getBoundingBugBox(triangle_idx_in_mesh_buffer);
+            child_bbox_list[0]->expandBy(triangle_bbox);
+        }
+        else
+        {
+            regional_division_triangle_list[1][mesh_idx].push_back(triangle_idx_in_mesh_buffer);
+            BoundingBugBox triangle_bbox = m_meshes[mesh_idx]->getBoundingBugBox(triangle_idx_in_mesh_buffer);
+            child_bbox_list[1]->expandBy(triangle_bbox);
         }
     }
     // Recursion build sub-tree
@@ -193,10 +249,10 @@ Node *SAH::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> trian
         return nullptr;
     }
     Node *result = nullptr;
-    if (typeid(BoundingBox3f) == typeid(*BS))
+    if (typeid(BoundingBugBox) == typeid(*BS))
     {
         std::cout << "Using BoundingBox Accel Structure (SAH)." << std::endl;
-        BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
+        BoundingBugBox *box = dynamic_cast<BoundingBugBox *>(BS);
         result = SAH::build(box, triangle_list, depth);
     }
     else if (typeid(BoundingSphere) == typeid(*BS))
@@ -207,7 +263,7 @@ Node *SAH::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> trian
     return result;
 }
 
-Node *SAH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *SAH::build(BoundingBugBox *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     /*
     For each axis: x, y, z:
@@ -228,7 +284,7 @@ Node *SAH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
         return nullptr;
     this->m_maxDepth = std::max(m_maxDepth, depth);
     Node *node = new Node(m_Dim);
-    node->BS = node->bbox = box;
+    node->BS = node->bbugbox = box;
     node->triangle_list = triangle_list;                 // 1st dim meshes pre scene, 2nd dim triangles pre mesh
     if (triangle_num < 30 || box->getVolume() < Epsilon) // leaf node
     {
@@ -260,14 +316,14 @@ Node *SAH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
             std::vector<std::vector<uint32_t>> triangle_idx_list;
             for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx) // bucket initial every mesh has a triangle_idx vector
                 triangle_idx_list.push_back(std::vector<uint32_t>());
-            buckets[dim_idx][bucket_idx] = new Bucket(new BoundingBox3f(), triangle_idx_list, (uint32_t)0);
+            buckets[dim_idx][bucket_idx] = new Bucket(new BoundingBugBox(), triangle_idx_list, (uint32_t)0);
         }
         for (size_t mesh_idx = 0; mesh_idx < m_meshes.size(); ++mesh_idx) // every dim travel all triangle, dim * prim_num
         {
             for (size_t triangle_idx = 0; triangle_idx < triangle_list[mesh_idx].size(); ++triangle_idx)
             {
                 uint32_t triangle_idx_in_mesh_buffer = triangle_list[mesh_idx][triangle_idx];
-                BoundingBox3f triangle_bbox = m_meshes[mesh_idx]->getBoundingBox(triangle_idx_in_mesh_buffer);
+                BoundingBugBox triangle_bbox = m_meshes[mesh_idx]->getBoundingBugBox(triangle_idx_in_mesh_buffer);
                 Point3f prim_center = triangle_bbox.getCenter();
                 float dim_center = prim_center[dim_idx];
                 uint16_t bucket_idx = floor((dim_center - dim_min) / (dim_max - dim_min) * nBuckets); // compute_bucket(centor) get the bucket which contain this triangle
@@ -319,9 +375,9 @@ Node *SAH::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle
     }
 
     // Divide the current root node to get two child nodes, and the division obtained by comparing the cost value
-    BoundingBox3f *child_bbox_list[m_Dim];
+    BoundingBugBox *child_bbox_list[m_Dim];
     for (size_t i = 0; i < m_Dim; ++i)
-        child_bbox_list[i] = new BoundingBox3f();
+        child_bbox_list[i] = new BoundingBugBox();
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
     for (size_t plane = 0; plane < chosen_plane; ++plane)
         child_bbox_list[0]->expandBy(*buckets[chosen_dim][plane]->bbox);
@@ -369,10 +425,10 @@ Node *Octtree::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> t
         return nullptr;
     }
     Node *result = nullptr;
-    if (typeid(BoundingBox3f) == typeid(*BS))
+    if (typeid(BoundingBugBox) == typeid(*BS))
     {
         std::cout << "Using BoundingBox Accel Structure (Octtree)." << std::endl;
-        BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
+        BoundingBugBox *box = dynamic_cast<BoundingBugBox *>(BS);
         result = Octtree::build(box, triangle_list, depth);
     }
     else if (typeid(BoundingSphere) == typeid(*BS))
@@ -383,7 +439,7 @@ Node *Octtree::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> t
     return result;
 }
 
-Node *Octtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *Octtree::build(BoundingBugBox *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     if (!triangle_list.size())
         return nullptr;
@@ -394,7 +450,7 @@ Node *Octtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> tria
         return nullptr;
     this->m_maxDepth = std::max(m_maxDepth, depth);
     Node *node = new Node(m_Dim);
-    node->BS = node->bbox = box;
+    node->BS = node->bbugbox = box;
     node->triangle_list = triangle_list;                 // 1st dim meshes pre scene, 2nd dim triangles pre mesh
     if (triangle_num < 30 || box->getVolume() < Epsilon) // leaf node
     {
@@ -405,14 +461,14 @@ Node *Octtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> tria
         return node;
     }
     ++this->m_innerNodeNum; // internal node
-    BoundingBox3f *child_bbox_list[m_Dim];
+    BoundingBugBox *child_bbox_list[m_Dim];
     Point3f minPoint, maxPoint, center = box->getCenter();
     for (size_t i = 0; i < m_Dim; ++i) // 8 vertices and midpoints can be divided into 8 sub-bounding boxes
     {
         Point3f corner = box->getCorner(i);
         minPoint = center.cwiseMin(corner); // The diagonal line can represent a cube, and the maximum and minimum points of each dimension
         maxPoint = center.cwiseMax(corner); // are taken as the maximum and minimum endpoints of the cube.
-        child_bbox_list[i] = new BoundingBox3f(minPoint, maxPoint);
+        child_bbox_list[i] = new BoundingBugBox(minPoint, maxPoint);
     }
     // Traverse all triangles and divide the triangles into corresponding sub-bounding boxes according to their positions
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
@@ -423,7 +479,7 @@ Node *Octtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> tria
             regional_division_triangle_list[i].push_back(std::vector<uint32_t>());
             for (size_t k = 0; k < node->triangle_list[j].size(); ++k)
             {                                                                                         // travel all triangles from certain mesh
-                BoundingBox3f triangle_bbox = m_meshes[j]->getBoundingBox(node->triangle_list[j][k]); // get current triangle's bounding box
+                BoundingBugBox triangle_bbox = m_meshes[j]->getBoundingBugBox(node->triangle_list[j][k]); // get current triangle's bounding box
                 if (child_bbox_list[i]->overlaps(triangle_bbox))                                      // if current triangle's bounding box in current regional division
                 {                                                                                     // if triangle overlaps sub-node i
                     regional_division_triangle_list[i][j].push_back(node->triangle_list[j][k]);       // add face_index to triangle_list
@@ -448,10 +504,10 @@ Node *KDtree::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> tr
         return nullptr;
     }
     Node *result = nullptr;
-    if (typeid(BoundingBox3f) == typeid(*BS))
+    if (typeid(BoundingBugBox) == typeid(*BS))
     {
         std::cout << "Using BoundingBox Accel Structure (KDtree)." << std::endl;
-        BoundingBox3f *box = dynamic_cast<BoundingBox3f *>(BS);
+        BoundingBugBox *box = dynamic_cast<BoundingBugBox *>(BS);
         result = KDtree::build(box, triangle_list, depth);
     }
     else if (typeid(BoundingSphere) == typeid(*BS))
@@ -462,7 +518,7 @@ Node *KDtree::build(BoundingStructure *BS, std::vector<std::vector<uint32_t>> tr
     return result;
 }
 
-Node *KDtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
+Node *KDtree::build(BoundingBugBox *box, std::vector<std::vector<uint32_t>> triangle_list, uint32_t depth)
 {
     if (!triangle_list.size())
         return nullptr;
@@ -473,7 +529,7 @@ Node *KDtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> trian
         return nullptr;
     this->m_maxDepth = std::max(m_maxDepth, depth);
     Node *node = new Node(m_Dim);
-    node->BS = node->bbox = box;
+    node->BS = node->bbugbox = box;
     node->triangle_list = triangle_list;                 // 1st dim meshes pre scene, 2nd dim triangles pre mesh
     if (triangle_num < 30 || box->getVolume() < Epsilon) // leaf node
     {
@@ -485,7 +541,7 @@ Node *KDtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> trian
     }
     ++this->m_innerNodeNum; // internal node
 
-    BoundingBox3f *child_bbox_list[m_Dim];
+    BoundingBugBox *child_bbox_list[m_Dim];
     uint8_t chosen_axis = depth % 3; // Select the coordinate axis to be split in turn according to the depth
     Point3f center = box->getCenter(), box_min = box->getCorner(0), box_max = box->getCorner(7);
     Point3f child_box_min, child_box_max;
@@ -493,8 +549,8 @@ Node *KDtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> trian
     child_box_min[chosen_axis] = center[chosen_axis];
     child_box_max = box_max;
     child_box_max[chosen_axis] = center[chosen_axis];
-    child_bbox_list[0] = new BoundingBox3f(box_min, child_box_max); // box_min and box_min move along the positive direction of the corresponding axis to the corresponding distance from the midpoint
-    child_bbox_list[1] = new BoundingBox3f(child_box_min, box_max); // box_min and box_min move along the negative direction of the corresponding axis to the corresponding distance from the midpoint
+    child_bbox_list[0] = new BoundingBugBox(box_min, child_box_max); // box_min and box_min move along the positive direction of the corresponding axis to the corresponding distance from the midpoint
+    child_bbox_list[1] = new BoundingBugBox(child_box_min, box_max); // box_min and box_min move along the negative direction of the corresponding axis to the corresponding distance from the midpoint
     // Traverse all triangles and divide the triangles into corresponding sub-bounding boxes according to their positions
     std::vector<std::vector<uint32_t>> regional_division_triangle_list[m_Dim];
     for (size_t i = 0; i < m_Dim; ++i)
@@ -504,7 +560,7 @@ Node *KDtree::build(BoundingBox3f *box, std::vector<std::vector<uint32_t>> trian
             regional_division_triangle_list[i].push_back(std::vector<uint32_t>());
             for (size_t k = 0; k < node->triangle_list[j].size(); ++k)
             {                                                                                         // travel all triangles from certain mesh
-                BoundingBox3f triangle_bbox = m_meshes[j]->getBoundingBox(node->triangle_list[j][k]); // get current triangle's bounding box
+                BoundingBugBox triangle_bbox = m_meshes[j]->getBoundingBugBox(node->triangle_list[j][k]); // get current triangle's bounding box
                 if (child_bbox_list[i]->overlaps(triangle_bbox))                                      // if current triangle's bounding box in current regional division
                 {                                                                                     // if triangle overlaps sub-node i
                     regional_division_triangle_list[i][j].push_back(node->triangle_list[j][k]);       // add face_index to triangle_list

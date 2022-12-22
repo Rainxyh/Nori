@@ -19,7 +19,6 @@
 		<transform name="toWorld">
 			<rotate axis="1,0,0" angle="45"/>
 		</transform>
-
 	</emitter>
 
 	<!-- Render the scene as viewed by a perspective camera -->

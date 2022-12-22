@@ -1,7 +1,6 @@
 #pragma once
 
 #include <nori/ray.h>
-#include <nori/bstructure.h>
 
 NORI_NAMESPACE_BEGIN
 
@@ -22,52 +21,42 @@ NORI_NAMESPACE_BEGIN
  * \ingroup libcore
  */
 template <typename _PointType>
-struct TBoundingBox : TBoundingStructure<_PointType>
-// struct TBoundingBox
-{
-    enum {
-        Dimension = _PointType::Dimension
-    };
+struct TBoundingBox {
+    enum { Dimension = _PointType::Dimension };
+    typedef _PointType PointType;
+    typedef typename PointType::Scalar Scalar;
+    typedef typename PointType::VectorType VectorType;
 
-    typedef _PointType                             PointType;
-    typedef typename PointType::Scalar             Scalar;
-    typedef typename PointType::VectorType         VectorType;
-    typedef TBoundingStructure<PointType>          BS;
-
-    /** 
+    /**
      * \brief Create a new invalid bounding box
-     * 
-     * Initializes the components of the minimum 
+     *
+     * Initializes the components of the minimum
      * and maximum position to \f$\infty\f$ and \f$-\infty\f$,
      * respectively.
      */
-    TBoundingBox() {
-        reset();
-    }
+    TBoundingBox() { reset(); }
     ~TBoundingBox() {}
 
     /// Create a collapsed bounding box from a single point
-    TBoundingBox(const PointType &p) 
-        : min(p), max(p) { }
+    TBoundingBox(const PointType& p) : min(p), max(p) {}
     /// Create a bounding box from two positions
-    TBoundingBox(const PointType &min, const PointType &max)
-        : min(min), max(max) {
-    }
+    TBoundingBox(const PointType& min, const PointType& max)
+        : min(min), max(max) {}
 
     template <typename PointType>
-    TBoundingBox &operator=(const TBoundingBox<PointType> &bbox){
+    TBoundingBox& operator=(const TBoundingBox<PointType>& bbox) {
         this->min = bbox.min;
         this->max = bbox.max;
         return *this;
     }
 
     /// Test for equality against another bounding box
-    bool operator==(const TBoundingBox &bbox) const {
+    bool operator==(const TBoundingBox& bbox) const {
         return min == bbox.min && max == bbox.max;
     }
 
     /// Test for inequality against another bounding box
-    bool operator!=(const TBoundingBox &bbox) const {
+    bool operator!=(const TBoundingBox& bbox) const {
         return min != bbox.min || max != bbox.max;
     }
 
@@ -79,22 +68,20 @@ struct TBoundingBox : TBoundingStructure<_PointType>
      * respectively.
      */
     void reset() {
-        min.setConstant( std::numeric_limits<Scalar>::infinity());
+        min.setConstant(std::numeric_limits<Scalar>::infinity());
         max.setConstant(-std::numeric_limits<Scalar>::infinity());
     }
 
     /// Calculate the n-dimensional volume of the bounding box
-    Scalar getVolume() const {
-        return (max - min).prod();
-    }
+    Scalar getVolume() const { return (max - min).prod(); }
 
     /// Calculate the n-1 dimensional volume of the boundary
     Scalar getSurfaceArea() const {
         Scalar result = 0.0f;
         VectorType d = max - min;
-        for (int i=0; i<Dimension; ++i) {
+        for (int i = 0; i < Dimension; ++i) {
             Scalar term = 1.0f;
-            for (int j=0; j<Dimension; ++j) {
+            for (int j = 0; j < Dimension; ++j) {
                 if (i == j)
                     continue;
                 term *= d[j];
@@ -107,9 +94,7 @@ struct TBoundingBox : TBoundingStructure<_PointType>
     }
 
     /// Return the center point
-    PointType getCenter() const {
-        return (max + min) * (Scalar) 0.5f;
-    }
+    PointType getCenter() const { return (max + min) * (Scalar)0.5f; }
 
     /**
      * \brief Check whether a point lies \a on or \a inside the bounding box
@@ -119,39 +104,35 @@ struct TBoundingBox : TBoundingStructure<_PointType>
      * \param strict Set this parameter to \c true if the bounding
      *               box boundary should be excluded in the test
      */
-    bool contains(const PointType &p, bool strict = false) const {
+    bool contains(const PointType& p, bool strict = false) const {
         if (strict) {
-            return (p.array() > min.array()).all() 
-                && (p.array() < max.array()).all();
+            return (p.array() > min.array()).all() &&
+                   (p.array() < max.array()).all();
         } else {
-            return (p.array() >= min.array()).all() 
-                && (p.array() <= max.array()).all();
+            return (p.array() >= min.array()).all() &&
+                   (p.array() <= max.array()).all();
         }
     }
 
     /**
-     * \brief Check whether a specified bounding box lies \a on or \a within 
+     * \brief Check whether a specified bounding box lies \a on or \a within
      * the current bounding box
      *
-     * Note that by definition, an 'invalid' bounding box (where min=\f$\infty\f$
-     * and max=\f$-\infty\f$) does not cover any space. Hence, this method will always 
-     * return \a true when given such an argument.
+     * Note that by definition, an 'invalid' bounding box (where
+     * min=\f$\infty\f$ and max=\f$-\infty\f$) does not cover any space. Hence,
+     * this method will always return \a true when given such an argument.
      *
      * \param strict Set this parameter to \c true if the bounding
      *               box boundary should be excluded in the test
      */
-    bool contains(const TBoundingBox &bbox, bool strict = false) const {
+    bool contains(const TBoundingBox& bbox, bool strict = false) const {
         if (strict) {
-            return (bbox.min.array() > min.array()).all() 
-                && (bbox.max.array() < max.array()).all();
+            return (bbox.min.array() > min.array()).all() &&
+                   (bbox.max.array() < max.array()).all();
         } else {
-            return (bbox.min.array() >= min.array()).all() 
-                && (bbox.max.array() <= max.array()).all();
+            return (bbox.min.array() >= min.array()).all() &&
+                   (bbox.max.array() <= max.array()).all();
         }
-    }
-    bool contains(BS &_bbox, bool strict = false) const {
-        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
-        return contains(bbox, strict);
     }
 
     /**
@@ -162,34 +143,30 @@ struct TBoundingBox : TBoundingStructure<_PointType>
      *
      * \return \c true If overlap was detected.
      */
-    bool overlaps(const TBoundingBox &bbox, bool strict = false) const {
+    bool overlaps(const TBoundingBox& bbox, bool strict = false) const {
         if (strict) {
-            return (bbox.min.array() < max.array()).all() 
-                && (bbox.max.array() > min.array()).all();
+            return (bbox.min.array() < max.array()).all() &&
+                   (bbox.max.array() > min.array()).all();
         } else {
-            return (bbox.min.array() <= max.array()).all() 
-                && (bbox.max.array() >= min.array()).all();
+            return (bbox.min.array() <= max.array()).all() &&
+                   (bbox.max.array() >= min.array()).all();
         }
-    }
-    bool overlaps(BS &_bbox, bool strict = false) const {
-        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
-        return overlaps(bbox, strict);
     }
 
     /**
      * \brief Calculate the smallest squared distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    Scalar squaredDistanceTo(const PointType &p) const {
+    Scalar squaredDistanceTo(const PointType& p) const {
         Scalar result = 0;
 
-        for (int i=0; i<Dimension; ++i) {
+        for (int i = 0; i < Dimension; ++i) {
             Scalar value = 0;
             if (p[i] < min[i])
                 value = min[i] - p[i];
             else if (p[i] > max[i])
                 value = p[i] - max[i];
-            result += value*value;
+            result += value * value;
         }
 
         return result;
@@ -199,7 +176,7 @@ struct TBoundingBox : TBoundingStructure<_PointType>
      * \brief Calculate the smallest distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    Scalar distanceTo(const PointType &p) const {
+    Scalar distanceTo(const PointType& p) const {
         return std::sqrt(squaredDistanceTo(p));
     }
 
@@ -207,35 +184,27 @@ struct TBoundingBox : TBoundingStructure<_PointType>
      * \brief Calculate the smallest square distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Scalar squaredDistanceTo(const TBoundingBox &bbox) const {
+    Scalar squaredDistanceTo(const TBoundingBox& bbox) const {
         Scalar result = 0;
 
-        for (int i=0; i<Dimension; ++i) {
+        for (int i = 0; i < Dimension; ++i) {
             Scalar value = 0;
             if (bbox.max[i] < min[i])
                 value = min[i] - bbox.max[i];
             else if (bbox.min[i] > max[i])
                 value = bbox.min[i] - max[i];
-            result += value*value; 
+            result += value * value;
         }
 
         return result;
-    }
-    Scalar squaredDistanceTo(BS &_bbox) const {
-        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
-        return squaredDistanceTo(bbox);
     }
 
     /**
      * \brief Calculate the smallest distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Scalar distanceTo(const TBoundingBox &bbox) const {
+    Scalar distanceTo(const TBoundingBox& bbox) const {
         return std::sqrt(squaredDistanceTo(bbox));
-    }
-    Scalar distanceTo(BS &_bbox) const {
-        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
-        return distanceTo(bbox);
     }
 
     /**
@@ -247,25 +216,19 @@ struct TBoundingBox : TBoundingStructure<_PointType>
      * \endcode
      * holds along each dimension \c dim.
      */
-    bool isValid() const {
-        return (max.array() >= min.array()).all();
-    }
+    bool isValid() const { return (max.array() >= min.array()).all(); }
 
     /// Check whether this bounding box has collapsed to a single point
-    bool isPoint() const {
-        return (max.array() == min.array()).all();
-    }
+    bool isPoint() const { return (max.array() == min.array()).all(); }
 
     /// Check whether this bounding box has any associated volume
-    bool hasVolume() const {
-        return (max.array() > min.array()).all();
-    }
+    bool hasVolume() const { return (max.array() > min.array()).all(); }
 
     /// Return the dimension index with the largest associated side length
     int getMajorAxis() const {
         VectorType d = max - min;
         int largest = 0;
-        for (int i=1; i<Dimension; ++i)
+        for (int i = 1; i < Dimension; ++i)
             if (d[i] > d[largest])
                 largest = i;
         return largest;
@@ -275,7 +238,7 @@ struct TBoundingBox : TBoundingStructure<_PointType>
     int getMinorAxis() const {
         VectorType d = max - min;
         int shortest = 0;
-        for (int i=1; i<Dimension; ++i)
+        for (int i = 1; i < Dimension; ++i)
             if (d[i] < d[shortest])
                 shortest = i;
         return shortest;
@@ -285,57 +248,39 @@ struct TBoundingBox : TBoundingStructure<_PointType>
      * \brief Calculate the bounding box extents
      * \return max-min
      */
-    VectorType getExtents() const {
-        return max - min;
-    }
+    VectorType getExtents() const { return max - min; }
 
     /// Clip to another bounding box
-    void clip(const TBoundingBox &bbox) {
+    void clip(const TBoundingBox& bbox) {
         min = min.cwiseMax(bbox.min);
         max = max.cwiseMin(bbox.max);
     }
-    void clip(BS &_bbox) {
-        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
-        clip(bbox);
-    }
 
     /// Expand the bounding box to contain another point
-    void expandBy(const PointType &p) {
+    void expandBy(const PointType& p) {
         min = min.cwiseMin(p);
         max = max.cwiseMax(p);
     }
 
     /// Expand the bounding box to contain another bounding box
-    void expandBy(const TBoundingBox &bbox) {
+    void expandBy(const TBoundingBox& bbox) {
         min = min.cwiseMin(bbox.min);
         max = max.cwiseMax(bbox.max);
     }
 
-    void expandBy(BS &_bbox)
-    {
-        TBoundingBox &bbox = dynamic_cast<TBoundingBox &>(_bbox);
-        expandBy(bbox);
-    }
-
     /// Merge two bounding boxes
-    static TBoundingBox merge(const TBoundingBox &bbox1, const TBoundingBox &bbox2) {
-        return TBoundingBox(
-            bbox1.min.cwiseMin(bbox2.min),
-            bbox1.max.cwiseMax(bbox2.max)
-        );
+    static TBoundingBox merge(const TBoundingBox& bbox1,
+                              const TBoundingBox& bbox2) {
+        return TBoundingBox(bbox1.min.cwiseMin(bbox2.min),
+                            bbox1.max.cwiseMax(bbox2.max));
     }
-    // BS* merge(BS &_bbox1, BS &_bbox2) {
-    //     TBoundingBox &bbox1 = dynamic_cast<TBoundingBox &>(_bbox1);
-    //     TBoundingBox &bbox2 = dynamic_cast<TBoundingBox &>(_bbox2);
-    //     return merge(bbox1, bbox2);
-    // }
 
     /// Merge bounding box list
-    static TBoundingBox merge(const std::vector<TBoundingBox> &bbox_list) {
+    static TBoundingBox merge(const std::vector<TBoundingBox>& bbox_list) {
         PointType merged_min, merged_max;
-        merged_min.setConstant( std::numeric_limits<Scalar>::infinity());
+        merged_min.setConstant(std::numeric_limits<Scalar>::infinity());
         merged_max.setConstant(-std::numeric_limits<Scalar>::infinity());
-        for(size_t i=0;i<bbox_list.size();++i){
+        for (size_t i = 0; i < bbox_list.size(); ++i) {
             merged_min.cwiseMin(bbox_list[i].min);
             merged_max.cwiseMax(bbox_list[i].max);
         }
@@ -344,7 +289,7 @@ struct TBoundingBox : TBoundingStructure<_PointType>
 
     /// Return the index of the largest axis, same with getMajorAxis()
     int getLargestAxis() const {
-        VectorType extents = max-min;
+        VectorType extents = max - min;
 
         if (extents[0] >= extents[1] && extents[0] >= extents[2])
             return 0;
@@ -357,7 +302,7 @@ struct TBoundingBox : TBoundingStructure<_PointType>
     /// Return the position of a bounding box corner
     PointType getCorner(int index) const {
         PointType result;
-        for (int i=0; i<Dimension; ++i)
+        for (int i = 0; i < Dimension; ++i)
             result[i] = (index & (1 << i)) ? max[i] : min[i];
         return result;
     }
@@ -367,20 +312,23 @@ struct TBoundingBox : TBoundingStructure<_PointType>
         if (!isValid())
             return "BoundingBox[invalid]";
         else
-            return tfm::format("BoundingBox[min=%s, max=%s]", min.toString(), max.toString());
+            return tfm::format("BoundingBox[min=%s, max=%s]", min.toString(),
+                               max.toString());
     }
 
     /// Check if a ray intersects a bounding box
-    bool rayIntersect(const Ray3f &ray) const {
+    bool rayIntersect(const Ray3f& ray) const {
         float nearT = -std::numeric_limits<float>::infinity();
         float farT = std::numeric_limits<float>::infinity();
 
-        for (int i=0; i<3; ++i) {
+        for (int i = 0; i < 3; ++i) {
             float origin = ray.o[i];
             float minVal = min[i], maxVal = max[i];
 
             if (ray.d[i] == 0) {
-                if (origin < minVal || origin > maxVal)  // i-th axis speed is 0, no offset, no intersection
+                if (origin < minVal ||
+                    origin > maxVal)  // i-th axis speed is 0, no offset, no
+                                      // intersection
                     return false;
             } else {
                 float t1 = (minVal - origin) * ray.dRcp[i];
@@ -389,8 +337,8 @@ struct TBoundingBox : TBoundingStructure<_PointType>
                 if (t1 > t2)
                     std::swap(t1, t2);
 
-                nearT = std::max(t1, nearT); // maximum of minimum
-                farT = std::min(t2, farT); // minimum of maximum
+                nearT = std::max(t1, nearT);  // maximum of minimum
+                farT = std::min(t2, farT);    // minimum of maximum
 
                 if (!(nearT <= farT))
                     return false;
@@ -401,11 +349,11 @@ struct TBoundingBox : TBoundingStructure<_PointType>
     }
 
     /// Return the overlapping region of the bounding box and an unbounded ray
-    bool rayIntersect(const Ray3f &ray, float &nearT, float &farT) const {
+    bool rayIntersect(const Ray3f& ray, float& nearT, float& farT) const {
         nearT = -std::numeric_limits<float>::infinity();
         farT = std::numeric_limits<float>::infinity();
 
-        for (int i=0; i<3; ++i) {
+        for (int i = 0; i < 3; ++i) {
             float origin = ray.o[i];
             float minVal = min[i], maxVal = max[i];
 
@@ -430,8 +378,8 @@ struct TBoundingBox : TBoundingStructure<_PointType>
         return true;
     }
 
-    PointType min; ///< Component-wise minimum 
-    PointType max; ///< Component-wise maximum
+    PointType min;  ///< Component-wise minimum
+    PointType max;  ///< Component-wise maximum
 };
 
 NORI_NAMESPACE_END

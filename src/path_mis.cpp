@@ -41,7 +41,7 @@ public:
             Emitter *rand_emitter = scene->getRandomEmitter(); // random sample an emitter
             EmitterQueryRecord eRec;
             rand_emitter->sample(eRec, sampler); // just sample and lerp point and normal
-            y = eRec.ref;
+            y = eRec.p;
             Ny = eRec.n;
             wi = (y - x).normalized();
             BSDFQueryRecord bRec(its.toLocal(wo), its.toLocal(wi), ESolidAngle);
@@ -50,10 +50,10 @@ public:
             {
                 float G = fabs(Nx.dot(wi)) * fabs(Ny.dot(-wi)) / (y - x).squaredNorm(); // dw (solid angle) change to dA (area)
                 Color3f fr = its.mesh->getBSDF()->eval(bRec);                           // BRDF term
-                Color3f coff = G * fr / rand_emitter->pdf() / scene->getEmitterPdf();   // integrate the above coefficients
+                Color3f coff = G * fr * its_ems.mesh->surfaceArea() / scene->getEmitterPdf();   // integrate the above coefficients
                 Ld_ems = coff * rand_emitter->eval(Ny, -wi);
                 if (fabs(Ny.dot(-wi) > Epsilon)) // except backforward ray
-                    weight_ems = rand_emitter->pdf() * scene->getEmitterPdf() * (y - x).squaredNorm() / fabs(Ny.dot(-wi));
+                    weight_ems = its_ems.mesh->surfaceArea() * scene->getEmitterPdf() * (y - x).squaredNorm() / fabs(Ny.dot(-wi));
                 else
                     weight_ems = Epsilon;
                 weight_mat = its.mesh->getBSDF()->pdf(bRec);
@@ -83,7 +83,7 @@ public:
             float next_event_estimation = 1.f;
             if (next_its.mesh->isEmitter())
             {
-                weight_ems = next_its.mesh->getEmitter()->pdf() * scene->getEmitterPdf() * (next_its.p - x).squaredNorm() / fabs(next_its.shFrame.n.dot(-wi));
+                weight_ems = next_its.mesh->surfaceArea() * scene->getEmitterPdf() * (next_its.p - x).squaredNorm() / fabs(next_its.shFrame.n.dot(-wi));
                 weight_mat = its.mesh->getBSDF()->pdf(bRec); // may different with weight_mat in emitter sample
                 next_event_estimation = weight_ems + weight_mat > 0 ? weight_mat / (weight_ems + weight_mat) : weight_ems;
                 if (!its.mesh->getBSDF()->isDiffuse()) // mirror and dielectric pdf is 0, need to special treatment
@@ -158,7 +158,7 @@ public:
                 Emitter *rand_emitter = scene->getRandomEmitter();
                 EmitterQueryRecord eRec;
                 rand_emitter->sample(eRec, sampler); // just sample and lerp point and normal
-                y = eRec.ref;
+                y = eRec.p;
                 Ny = eRec.n;
                 wi = (y - x).normalized();
 
@@ -170,10 +170,10 @@ public:
                     Color3f fr = its.mesh->getBSDF()->eval(bRec);
                     // weight_ems include measure change from soild angle to area, which except fr and cos_theta_x
                     if (fabs(Ny.dot(-wi) > Epsilon)) // except backforward ray
-                        weight_ems = rand_emitter->pdf() * scene->getEmitterPdf() * (y - x).squaredNorm() / fabs(Ny.dot(-wi));
+                        weight_ems = its_ems.mesh->surfaceArea() * scene->getEmitterPdf() * (y - x).squaredNorm() / fabs(Ny.dot(-wi));
                     else
                         weight_ems = Epsilon;
-                    Color3f coff = cumulative_coff * G * fr / rand_emitter->pdf() / scene->getEmitterPdf(); // this its include the BRDF and prob before
+                    Color3f coff = cumulative_coff * G * fr * its_ems.mesh->surfaceArea() / scene->getEmitterPdf(); // this its include the BRDF and prob before
                     Ld_ems = coff * rand_emitter->eval(Ny, -wi);
 
                     weight_mat = its.mesh->getBSDF()->pdf(bRec);
@@ -194,7 +194,7 @@ public:
             }
             if (next_its.mesh->isEmitter())
             {
-                weight_ems = next_its.mesh->getEmitter()->pdf() * scene->getEmitterPdf() * (next_its.p - x).squaredNorm() / fabs(next_its.shFrame.n.dot(-wi));
+                weight_ems = next_its.mesh->surfaceArea() * scene->getEmitterPdf() * (next_its.p - x).squaredNorm() / fabs(next_its.shFrame.n.dot(-wi));
                 weight_mat = its.mesh->getBSDF()->pdf(bRec); // may different with weight_mat in emitter sample
                 next_event_estimation = weight_ems + weight_mat > 0 ? weight_mat / (weight_ems + weight_mat) : weight_ems;
                 if (!its.mesh->getBSDF()->isDiffuse()) // mirror and dielectric

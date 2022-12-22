@@ -19,10 +19,9 @@ public:
         if (bRec.measure != ESolidAngle
             || Frame::cosTheta(bRec.wi) <= 0
             || Frame::cosTheta(bRec.wo) <= 0)
-            return Color3f(0.0f);
+            return BLACK;
 
         /* The BRDF is simply the albedo / pi */
-        // return m_albedo * INV_PI;
         return m_albedo * INV_PI;
     }
 

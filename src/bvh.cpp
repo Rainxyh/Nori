@@ -308,6 +308,17 @@ void BVH::clear() {
     m_indices.shrink_to_fit();
 }
 
+template <typename T, typename b>
+struct fuck
+{
+    enum
+    {
+        Dimension
+    };
+    T x;
+    T y;
+};
+
 void BVH::build() {
     uint32_t size  = getTriangleCount();
     if (size == 0)
@@ -319,10 +330,11 @@ void BVH::build() {
     Timer timer;
 
     /* Conservative estimate for the total number of nodes */
-    m_nodeNums.resize(2*size);
+    m_nodeNums.resize(2 * size);
     m_nodeNums = {};
     m_nodeNums[0].bbox = m_bbox;
     m_indices.resize(size);
+    cout << sizeof(fuck<Point3f, float>) << " " << sizeof(BoundingBox3f) << " " << sizeof(float) << " " << sizeof(BoundingBox2f) << " " << sizeof(BoundingBox4f) << endl;
 
     if (sizeof(BVHNode) != 32)
         throw NoriException("BVH Node is not packed! Investigate compiler settings.");

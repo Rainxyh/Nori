@@ -50,6 +50,20 @@ public:
         return *this;
     }
 
+    uint16_t maxAxis() const {
+        Scalar max = std::numeric_limits<Scalar>::min();
+        uint16_t index = 0;
+        for (size_t i = 0; i < Dimension; ++i)
+        {
+            if (max < this->coeff(i))
+            {
+                max = this->coeff(i);
+                index = i;
+            }
+        }
+        return index;
+    }
+
     /// Return a human-readable string summary
     std::string toString() const {
         std::string result;
@@ -100,6 +114,18 @@ public:
         return *this;
     }
 
+    uint16_t maxAxis() const {
+        Scalar max = std::numeric_limits<Scalar>::min();
+        uint16_t index = 0;
+        for (size_t i=0; i<Dimension; ++i) {
+            if(max<this->coeff(i)){
+                max = this->coeff(i);
+                index = i;
+            }
+        }
+        return index;
+    }
+
     /// Return a human-readable string summary
     std::string toString() const {
         std::string result;
@@ -141,6 +167,18 @@ public:
     Normal3f &operator=(const Eigen::MatrixBase<Derived>& p) {
         this->Base::operator=(p);
         return *this;
+    }
+
+    uint16_t maxAxis() const {
+        Scalar max = std::numeric_limits<Scalar>::min();
+        uint16_t index = 0;
+        for (size_t i=0; i<Dimension; ++i) {
+            if(max<this->coeff(i)){
+                max = this->coeff(i);
+                index = i;
+            }
+        }
+        return index;
     }
 
     /// Return a human-readable string summary

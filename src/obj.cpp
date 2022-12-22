@@ -45,8 +45,8 @@ public:
                 Point3f p;
                 line >> p.x() >> p.y() >> p.z();
                 p = trafo * p;
-                if (typeid(BoundingBox3f) == typeid(*m_BS))
-                    m_bbox->expandBy(p);
+                if (typeid(BoundingBugBox) == typeid(*m_BS))
+                    m_bbugbox->expandBy(p);
                 else if (typeid(BoundingSphere) == typeid(*m_BS))
                     m_bsphere->expandBy(p);
                 positions.push_back(p);

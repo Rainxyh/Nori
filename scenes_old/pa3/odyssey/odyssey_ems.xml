@@ -43,7 +43,7 @@
 
 	<!-- glowing wall -->
 	<mesh type="obj">
-		<string name="filename" value="cube.obj"/>
+		<string name="filename" value="cube.obj"/>	
 		<transform name="toWorld">
 			<translate value="0, 0.5, 0"/>
 			<scale value="1, 10, 18"/>

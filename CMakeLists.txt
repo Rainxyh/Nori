@@ -45,6 +45,7 @@ add_executable(nori
   include/nori/bitmap.h
   include/nori/block.h
   include/nori/bsdf.h
+  include/nori/bbugbox.h
   include/nori/bsphere.h
   include/nori/bstructure.h
   include/nori/bvh.h
@@ -75,7 +76,10 @@ add_executable(nori
   src/accel.cpp
   src/ao.cpp
   src/av.cpp
-  src/area.cpp
+  #src/area.cpp
+  src/arealight.cpp
+  src/pointlight.cpp
+  src/disklight.cpp
   src/bitmap.cpp
   src/block.cpp
   src/bvh.cpp
@@ -83,6 +87,10 @@ add_executable(nori
   src/common.cpp
   src/dielectric.cpp
   src/diffuse.cpp
+  src/direct.cpp
+  src/direct_ems.cpp
+  #src/direct_mats.cpp
+  #src/direct_mis.cpp
   src/gui.cpp
   src/independent.cpp
   src/main.cpp
@@ -98,7 +106,6 @@ add_executable(nori
   src/path_mats.cpp
   src/path_mis.cpp
   src/perspective.cpp
-  src/pointlight.cpp
   src/proplist.cpp
   src/rfilter.cpp
   src/scene.cpp

@@ -35,17 +35,17 @@ public:
             }
         }
 
-        if (its.mesh->getBSDF()->isDiffuse()) // diffuse
+        if (its.mesh->getBSDF()->isDiffuse())  // diffuse
         {
             Point3f x = its.p, y;
             float G = 0.f, V = 1.f;
             Emitter *rand_emitter = scene->getRandomEmitter();
             EmitterQueryRecord eRec;
             rand_emitter->sample(eRec, sampler); // just sample and lerp point and normal
-            y = eRec.ref; 
+            y = eRec.p; 
             Ny = eRec.n;
             Vector3f wo = -ray.d.normalized(), wi = (y - x).normalized();
-            Lr = rand_emitter->eval(Ny, -wi) / rand_emitter->pdf();
+            Lr = rand_emitter->eval(Ny, -wi) * eRec.mesh->surfaceArea();
 
             BSDFQueryRecord bRec(its.toLocal(wi), its.toLocal(wo), ESolidAngle);
             Color3f fr = its.mesh->getBSDF()->eval(bRec);
@@ -60,8 +60,7 @@ public:
                 tex_color = its.mesh->getTexture()->getValue(its.mtlName, its.uv);
             Lr *= tex_color;
             Lo = Le + Lr;
-        }
-        else // dielectric or mirror
+        } else  // dielectric or mirror
         {
             Point3f x = its.p, y;
             Vector3f wo = -ray.d.normalized(), wi;
@@ -84,17 +83,13 @@ public:
         Normal3f Nx, Ny;
         Vector3f wo, wi;
         Intersection its;
-        while (1)
-        {
-            if (!scene->rayIntersect(_ray, its))
-            {
+        while (1) {
+            if (!scene->rayIntersect(_ray, its)) {
                 break;
             }
             ++depth;
-            if (depth > 3)
-            {
-                if (sampler->next1D() > probability)
-                {
+            if (depth > 3) {
+                if (sampler->next1D() > probability) {
                     break;
                 }
                 fr /= probability;
@@ -114,10 +109,10 @@ public:
                 Emitter *rand_emitter = scene->getRandomEmitter();
                 EmitterQueryRecord eRec;
                 rand_emitter->sample(eRec, sampler); // just sample and lerp point and normal
-                y = eRec.ref;
+                y = eRec.p;
                 Ny = eRec.n;
                 wi = (y - x).normalized();
-                Color3f Lr = rand_emitter->eval(Ny, -wi) / rand_emitter->pdf();
+                Color3f Lr = rand_emitter->eval(Ny, -wi) * eRec.mesh->surfaceArea();
 
                 BSDFQueryRecord bRec(its.toLocal(wi), its.toLocal(wo), ESolidAngle);
                 fr *= its.mesh->getBSDF()->eval(bRec);

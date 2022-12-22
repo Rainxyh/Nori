@@ -13,7 +13,6 @@ public:
 
     Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &ray, size_t depth) const
     {
-
         float RR = 0.8f;
         if (depth > 3 && sampler->next1D() > RR)
             return BLACK;
@@ -41,8 +40,8 @@ public:
         {
             Emitter *rand_emitter = scene->getRandomEmitter(); // random sample an emitter
             EmitterQueryRecord eRec;
-            rand_emitter->sample(eRec, sampler); // just sample and lerp point and normal
-            y = eRec.ref;
+            rand_emitter->sampleWithoutCal(eRec, sampler); // just sample and lerp point and normal
+            y = eRec.p;
             Ny = eRec.n;
             wi = (y - x).normalized();
             BSDFQueryRecord bRec(its.toLocal(wo), its.toLocal(wi), ESolidAngle);
@@ -51,7 +50,7 @@ public:
             {
                 float G = fabs(Nx.dot(wi)) * fabs(Ny.dot(-wi)) / (y - x).squaredNorm(); // dw (solid angle) change to dA (area)
                 Color3f fr = its.mesh->getBSDF()->eval(bRec);                           // BRDF term
-                Color3f coff = G * fr / rand_emitter->pdf() / scene->getEmitterPdf();   // integrate the above coefficients
+                Color3f coff = G * fr * its_ems.mesh->surfaceArea() / scene->getEmitterPdf();   // integrate the above coefficients
                 Ld_ems = coff * rand_emitter->eval(Ny, -wi);
                 last_sample_is_ems = true; // Has emitter sample been done in the current step ?
             }
@@ -131,7 +130,7 @@ public:
                 Emitter *rand_emitter = scene->getRandomEmitter();
                 EmitterQueryRecord eRec;
                 rand_emitter->sample(eRec, sampler); // just sample and lerp point and normal
-                y = eRec.ref;
+                y = eRec.p;
                 Ny = eRec.n;
                 wi = (y - x).normalized();
                 BSDFQueryRecord bRec(its.toLocal(wo), its.toLocal(wi), ESolidAngle);
@@ -140,7 +139,7 @@ public:
                 {
                     float G = fabs(Nx.dot(wi)) * fabs(Ny.dot(-wi)) / (y - x).squaredNorm();
                     Color3f fr = its.mesh->getBSDF()->eval(bRec);
-                    Color3f coff = cumulative_coff * G * fr / rand_emitter->pdf() / scene->getEmitterPdf();
+                    Color3f coff = cumulative_coff * G * fr * its_ems.mesh->surfaceArea() / scene->getEmitterPdf();
                     Color3f Li = coff * rand_emitter->eval(Ny, -wi);
                     L_dir += Li;
                     last_sample_is_ems = true;

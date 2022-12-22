@@ -21,11 +21,10 @@ NORI_NAMESPACE_BEGIN
  *
  * \author Wenzel Jakob
  */
-class BVH
-{
+class BVH {
     friend class BVHBuildTask;
 
-public:
+   public:
     /// Create a new and empty BVH
     BVH() { m_meshOffset.push_back(0u); }
 
@@ -40,7 +39,7 @@ public:
      *
      * This function can only be used before \ref build() is called
      */
-    void addMesh(Mesh *mesh);
+    void addMesh(Mesh* mesh);
 
     /// Build the BVH
     void build();
@@ -60,7 +59,8 @@ public:
      *
      * \return \c true If an intersection was found
      */
-    bool rayIntersect(const Ray3f &ray, Intersection &its,
+    bool rayIntersect(const Ray3f& ray,
+                      Intersection& its,
                       bool shadowRay = false) const;
 
     /// Return the total number of meshes registered with the BVH
@@ -70,39 +70,35 @@ public:
     uint32_t getTriangleCount() const { return m_meshOffset.back(); }
 
     /// Return one of the registered meshes
-    Mesh *getMesh(uint32_t idx) { return m_meshes[idx]; }
+    Mesh* getMesh(uint32_t idx) { return m_meshes[idx]; }
 
     /// Return one of the registered meshes (const version)
-    const Mesh *getMesh(uint32_t idx) const { return m_meshes[idx]; }
+    const Mesh* getMesh(uint32_t idx) const { return m_meshes[idx]; }
 
     //// Return an axis-aligned bounding box containing the entire tree
-    const BoundingBox3f &getBoundingBox() const
-    {
-        return m_bbox;
-    }
+    const BoundingBox3f& getBoundingBox() const { return m_bbox; }
 
-protected:
+   protected:
     /**
      * \brief Compute the mesh and triangle indices corresponding to
      * a primitive index used by the underlying generic BVH implementation.
      */
-    uint32_t findMesh(uint32_t &idx) const
-    {
-        auto it = std::lower_bound(m_meshOffset.begin(), m_meshOffset.end(), idx + 1) - 1;
+    uint32_t findMesh(uint32_t& idx) const {
+        auto it = std::lower_bound(m_meshOffset.begin(), m_meshOffset.end(),
+                                   idx + 1) -
+                  1;
         idx -= *it;
         return (uint32_t)(it - m_meshOffset.begin());
     }
 
     //// Return an axis-aligned bounding box containing the given triangle
-    BoundingBox3f getBoundingBox(uint32_t index) const
-    {
+    BoundingBox3f getBoundingBox(uint32_t index) const {
         uint32_t meshIdx = findMesh(index);
         return m_meshes[meshIdx]->getBoundingBox(index);
     }
 
     //// Return the centroid of the given triangle
-    Point3f getCentroid(uint32_t index) const
-    {
+    Point3f getCentroid(uint32_t index) const {
         uint32_t meshIdx = findMesh(index);
         return m_meshes[meshIdx]->getCentroid(index);
     }
@@ -111,19 +107,16 @@ protected:
     std::pair<float, uint32_t> statistics(uint32_t index = 0) const;
 
     /* BVH node in 32 bytes */
-    struct BVHNode
-    {
-        union
-        {
-            struct
-            {
+    struct BVHNode {
+        BoundingBox3f bbox;
+        union {
+            struct {
                 unsigned flag : 1;
                 uint32_t size : 31;
                 uint32_t start;
             } leaf;
 
-            struct
-            {
+            struct {
                 unsigned flag : 1;
                 uint32_t axis : 31;
                 uint32_t rightChild;
@@ -131,40 +124,25 @@ protected:
 
             uint64_t data;
         };
-        BoundingBox3f bbox;
 
-        bool isLeaf() const
-        {
-            return leaf.flag == 1;
-        }
+        bool isLeaf() const { return leaf.flag == 1; }
 
-        bool isInner() const
-        {
-            return leaf.flag == 0;
-        }
+        bool isInner() const { return leaf.flag == 0; }
 
-        bool isUnused() const
-        {
-            return data == 0;
-        }
+        bool isUnused() const { return data == 0; }
 
-        uint32_t start() const
-        {
-            return leaf.start;
-        }
+        uint32_t start() const { return leaf.start; }
 
-        uint32_t end() const
-        {
-            return leaf.start + leaf.size;
-        }
+        uint32_t end() const { return leaf.start + leaf.size; }
     };
 
-private:
-    std::vector<Mesh *> m_meshes;       ///< List of meshes registered with the BVH
-    std::vector<uint32_t> m_meshOffset; ///< Index of the first triangle for each shape
-    std::vector<BVHNode> m_nodeNums;    ///< BVH nodes
-    std::vector<uint32_t> m_indices;    ///< Index references by BVH nodes
-    BoundingBox3f m_bbox;               ///< Bounding box of the entire BVH
+   private:
+    std::vector<Mesh*> m_meshes;  ///< List of meshes registered with the BVH
+    std::vector<uint32_t>
+        m_meshOffset;  ///< Index of the first triangle for each shape
+    std::vector<BVHNode> m_nodeNums;  ///< BVH nodes
+    std::vector<uint32_t> m_indices;  ///< Index references by BVH nodes
+    BoundingBox3f m_bbox;             ///< Bounding box of the entire BVH
 };
 
 NORI_NAMESPACE_END

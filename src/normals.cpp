@@ -22,7 +22,7 @@ public:
     {
         Intersection its;
         if (!scene->rayIntersect(ray, its))
-            return Color3f(0.0f);
+            return BLACK;
 
         Normal3f n = its.shFrame.n.cwiseAbs();
         return Color3f(n.x(), n.y(), n.z());

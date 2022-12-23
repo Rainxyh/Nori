@@ -29,7 +29,7 @@ struct EmitterQueryRecord {
     /// Associated surface normal
     Normal3f n;
     /// Solid angle density wrt. 'ref'
-    float pdf;
+    float pdf = 1.f;
     /// Direction vector from 'ref' to 'p'
     Vector3f wi;
     /// Distance between 'ref' and 'p'

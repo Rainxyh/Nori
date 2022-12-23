@@ -103,7 +103,7 @@ struct Color4f : public Eigen::Array4f {
         if (w() != 0)
             return head<3>() / w();
         else
-            return Color3f(0.0f);
+            return BLACK;
     }
 
     /// Return a human-readable string summary

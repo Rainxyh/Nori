@@ -39,41 +39,45 @@ public:
         return a / b;
     }
 
-    static float G1(const Vector3f &wv, const Vector3f &wh, float alpha)
+    static float smithBeckmannG1(const Vector3f &wv, const Vector3f &wh, float alpha)
     { // Beckmann geometric masking term
         float c = wv.dot(wh) / Frame::cosTheta(wv);
-        if (c <= 0)
-        {
-            return 0;
-        }
+        if (c <= 0) return 0;
         float b = 1.0f / (alpha * Frame::tanTheta(wv));
         return b < 1.6f ? (3.535f * b + 2.181f * b * b) / (1.f + 2.276f * b + 2.577f * b * b) : 1;
     }
 
     /// Evaluate the BRDF for the given pair of directions
-    Color3f eval(const BSDFQueryRecord &bRec) const
-    {
-        Vector3f wh = (bRec.wi + bRec.wo).normalized(); // half vector
-        float cosThetaI = Frame::cosTheta(bRec.wi);
-        float cosThetaO = Frame::cosTheta(bRec.wo);
-        float cosThetaH = Frame::cosTheta(wh);
-        float D = DistributeBeckmann(wh, m_alpha);
-        float F = fresnel(wh.dot(bRec.wi), m_extIOR, m_intIOR);  // cos(wi, wh) not cos(wi, N)
-        float G = G1(bRec.wi, wh, m_alpha) * G1(bRec.wo, wh, m_alpha);
-        return (m_kd / M_PI) + m_ks * ((D * F * G) / (4.0f * cosThetaI * cosThetaO * cosThetaH));
-    }
+	virtual Color3f eval(const BSDFQueryRecord &bRec) const {
+
+		// if (bRec.measure != ESolidAngle) return BLACK;
+        if (Frame::cosTheta(bRec.wi) <= 0 || Frame::cosTheta(bRec.wo) <= 0)
+			return BLACK;
+
+		Color3f diffuse = m_kd * INV_PI;
+
+		Normal3f w_h = (bRec.wi + bRec.wo).normalized();
+		float D = DistributeBeckmann(w_h, m_alpha);
+		float F = fresnel(w_h.dot(bRec.wi), m_extIOR, m_intIOR);
+		float G = smithBeckmannG1(bRec.wi, w_h, m_alpha) * smithBeckmannG1(bRec.wo, w_h, m_alpha);
+
+		Color3f specular = m_ks * F * D * G / (4 * (Frame::cosTheta(bRec.wi) * Frame::cosTheta(bRec.wo)));
+		if (!specular.isValid()) specular = BLACK;
+		return specular + diffuse;
+	}
 
     /// Evaluate the sampling density of \ref sample() wrt. solid angles
-    float pdf(const BSDFQueryRecord &bRec) const
-    {
-        if (bRec.wo.z() <= 0)
-        {
-            return 0;
-        }
-        Vector3f wh = (bRec.wi + bRec.wo).normalized();
-        float D = DistributeBeckmann(wh, m_alpha);
-        float jacobian = 1 / (4.0f * abs(wh.dot(bRec.wo)));
-        return m_ks * D * Frame::cosTheta(wh) * jacobian + (1 - m_ks) * Frame::cosTheta(bRec.wo) * INV_PI;
+    virtual float pdf(const BSDFQueryRecord &bRec) const {
+		
+		if (Frame::cosTheta(bRec.wo) <= 0.0f || Frame::cosTheta(bRec.wi) <= 0.0f) return 0.0f;
+		
+		float dpdf = (1.0f - m_ks) * Warp::squareToCosineHemispherePdf(bRec.wo);
+		Normal3f w_h = (bRec.wi + bRec.wo).normalized();
+		float jacobian = 0.25f / (w_h.dot(bRec.wo));
+		float spdf = m_ks * Warp::squareToBeckmannPdf(w_h, m_alpha) * jacobian;
+		if (isnan(dpdf)) dpdf = 0.0f;
+		if (isnan(spdf)) spdf = 0.0f;
+		return spdf + dpdf;
     }
 
     /// Sample the BRDF
@@ -81,7 +85,7 @@ public:
     {
         if (Frame::cosTheta(bRec.wi) <= 0)
         {
-            return Color3f(0.0f);
+            return BLACK;
         }
         if (_sample.x() > m_ks)
         { // diffuse
@@ -96,13 +100,16 @@ public:
         }
         if (bRec.wo.z() < 0.f)
         {
-            return Color3f(0.0f);
+            return BLACK;
         }
         // Note: Once you have implemented the part that computes the scattered
         // direction, the last part of this function should simply return the
         // BRDF value divided by the solid angle density and multiplied by the
         // cosine factor from the reflection equation, i.e.
-        return eval(bRec) * Frame::cosTheta(bRec.wo) / pdf(bRec);
+        return eval(bRec) / pdf(bRec) * Frame::cosTheta(bRec.wo);
+    }
+    Color3f sample(BSDFQueryRecord& bRec, Sampler* sampler) const {
+        return sample(bRec, sampler->next2D());
     }
 
     bool isDiffuse() const {

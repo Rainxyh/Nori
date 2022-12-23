@@ -44,6 +44,38 @@ void Mesh::activate() {
     }
 }
 
+void Mesh::addChild(NoriObject *obj) {
+    switch (obj->getClassType()) {
+        case ETexture:
+            if (m_texture){
+                    throw NoriException(
+                        "Mesh: tried to register multiple BSDF instances!");
+                m_texture = static_cast<NoriTexture *>(obj);
+            }
+            break;
+        case EBSDF: {
+                if (m_bsdf)
+                    throw NoriException(
+                        "Mesh: tried to register multiple BSDF instances!");
+                m_bsdf = static_cast<BSDF *>(obj);
+            }
+            break;
+
+        case EEmitter: {
+                if (m_emitter)
+                    throw NoriException(
+                        "Mesh: tried to register multiple Emitter instances!");
+                m_emitter = static_cast<Emitter *>(obj);
+                m_emitter->setMesh(this);
+            }
+            break;
+
+        default:
+            throw NoriException("Mesh::addChild(<%s>) is not supported!",
+                                classTypeName(obj->getClassType()));
+    }
+}
+
 void Mesh::samplePosition(Sampler* sampler, Point3f& point, Normal3f& normal) const {
     size_t idx = m_dpdf->sample(sampler->next1D());
     Point2f sample(sampler->next2D());
@@ -235,38 +267,6 @@ Point3f Mesh::getCentroid(uint32_t index) const {
         (m_V.col(m_F(0, index)) +
          m_V.col(m_F(1, index)) +
          m_V.col(m_F(2, index)));
-}
-
-void Mesh::addChild(NoriObject *obj) {
-    switch (obj->getClassType()) {
-        case ETexture:
-            if (m_texture)
-                throw NoriException(
-                    "Mesh: tried to register multiple BSDF instances!");
-            m_texture = static_cast<NoriTexture *>(obj);
-            break;
-
-        case EBSDF:
-            if (m_bsdf)
-                throw NoriException(
-                    "Mesh: tried to register multiple BSDF instances!");
-            m_bsdf = static_cast<BSDF *>(obj);
-            break;
-
-        case EEmitter: {
-                Emitter *emitter = static_cast<Emitter *>(obj);
-                if (m_emitter)
-                    throw NoriException(
-                        "Mesh: tried to register multiple Emitter instances!");
-                m_emitter = emitter;
-                m_emitter->setMesh(this);
-            }
-            break;
-
-        default:
-            throw NoriException("Mesh::addChild(<%s>) is not supported!",
-                                classTypeName(obj->getClassType()));
-    }
 }
 
 std::string Mesh::toString() const {

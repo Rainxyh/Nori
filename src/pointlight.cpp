@@ -16,7 +16,7 @@ public:
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
     // Sampling is the only way to get contribution from this light source
     virtual Color3f eval(const Vector3f &normal, const Vector3f &wi) const {
-        return Color3f(0.0f);
+        return BLACK;
     }
     virtual Color3f eval(const EmitterQueryRecord &lRec) const {
         return eval(lRec.n, lRec.wi);

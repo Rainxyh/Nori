@@ -56,7 +56,6 @@ public:
 			// Assume Li has the pdf included in it.
 			//std::ofstream park_sampled_pts("park_sampled.csv");
             Color3f Li = e->sample(eRec, sampler);
-			// cout<<Li<<endl;
 			/*
 			for (int i = 0; i < 512; i++)
 			{
@@ -67,13 +66,9 @@ public:
 			
 			// Compute BSDF contribution for chosen direction.
 			BSDFQueryRecord bRec(its.toLocal(-eRec.wi), its.toLocal(-ray.d), ESolidAngle);
-			bRec.p = its.p;
-			bRec.uv = its.uv;
 
-			float cosTheta = fabsf(its.shFrame.n.dot(eRec.wi));
-			if(cosTheta<0)cosTheta=0;
+			float cosTheta = fmaxf(its.shFrame.n.dot(-eRec.wi), 0.f);
 			Color3f evalTerm = bsdf->eval(bRec) * Li * cosTheta;
-			// cout<<bsdf->eval(bRec)<<endl;
 			
 			if (!evalTerm.isZero() && evalTerm.isValid())
 			{

@@ -26,7 +26,7 @@ public:
 		Vector3f world_dir = wi;
 		Vector3f local_dir = m_worldToLocal * world_dir;
 		float cos_theta = Frame::cosTheta(local_dir);
-		if (cos_theta >= m_cosThetaMax) return m_radiance;
+		if (cos_theta < m_cosThetaMax) return m_radiance;
 		else return 0.0f;
 	}
 	virtual Color3f eval(const EmitterQueryRecord & lRec) const {
@@ -40,7 +40,7 @@ public:
 		float sampled_pdf = Warp::squareToUniformSphereCapPdf(sampled_dir, m_cosThetaMax);
 		
 		// Convert to world coordinate frame
-		lRec.wi = -(m_localToWorld * sampled_dir);
+		lRec.wi = (m_localToWorld * sampled_dir);
 		lRec.pdf = sampled_pdf;
 		lRec.dist = INFINITY;
 		lRec.emitter = this;
@@ -76,9 +76,9 @@ public:
 	}
 
 private:
-	Color3f m_radiance;
-	float   m_thetaA;
-	float   m_cosThetaMax;
+	Color3f   m_radiance;
+	float     m_thetaA;
+	float     m_cosThetaMax;
 	Transform m_localToWorld;
 	Transform m_worldToLocal;
 };

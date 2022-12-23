@@ -33,7 +33,7 @@ public:
                 // create the emitter query record and sample a light source
                 // assuming just one light source for now.
                 EmitterQueryRecord eRec;
-                const Emitter* light = scene->getLights()[0];
+                const Emitter* light = scene->getEmitterList()[0];
                 if (light != nullptr) {
                     // Sample the light source
                     eRec.ref = its.p;

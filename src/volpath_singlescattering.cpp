@@ -27,7 +27,7 @@ public:
 		Color3f transmittance(1.0);
 
 		// Choose a light
-		float pdf = 1.0f / scene->getLights().size();
+		float pdf = 1.0f / scene->getEmitterList().size();
 		const Emitter* random_emitter = scene->getRandomEmitter(sampler->next1D());
 
 		// Emitter Sampling
@@ -63,7 +63,7 @@ public:
 					L_ems *= V * transmittance;
 				}
 				else
-					L_ems = Color3f(0.0f);
+					L_ems = BLACK;
 
 
 				if (!random_emitter->isDelta() && !isnan(mis))
@@ -80,7 +80,7 @@ public:
 		if (!random_emitter->isDelta())
 		{
 			BSDFQueryRecord bRec(isect.toLocal(-ray.d));
-			Color3f f = bsdf->sample(bRec, sampler->next2D());
+			Color3f f = bsdf->sample(bRec, sampler);
 			float pdf_m = bRec.pdf;
 
 			if (!f.isZero() && pdf_m != 0.0f && !isnan(pdf_m))
@@ -140,7 +140,7 @@ public:
 		
 		// Compute direct lighting to emitter
 		const Emitter* emitter = scene->getRandomEmitter(sampler->next1D());
-		float light_pdf = 1.0f / scene->getLights().size();
+		float light_pdf = 1.0f / scene->getEmitterList().size();
 
 		Color3f Lm_emit(0.f), Lm_phase(0.0f);
 		// Choose a point on the light source
@@ -172,7 +172,7 @@ public:
 					Lm_emit *= V;
 				}
 				else
-					Lm_emit = Color3f(0.0f);
+					Lm_emit = BLACK;
 				
 				if (!emitter->isDelta() && !isnan(mis))
 				{
@@ -277,7 +277,7 @@ public:
 
 			// Sample a reflection ray
 			BSDFQueryRecord bRec(isect.toLocal(-traced_ray.d));
-			Color3f f = bsdf->sample(bRec, sampler->next2D());
+			Color3f f = bsdf->sample(bRec, sampler);
 			Vector3f reflected_dir = isect.toWorld(bRec.wo);
 
 			throughput *= f * fabsf(Frame::cosTheta(bRec.wo));

@@ -71,7 +71,7 @@ public:
 					L_ems *= V;
 				}
 				else
-					L_ems = Color3f(0.0f);
+					L_ems = BLACK;
 
 
 				if (!random_emitter->isDelta())

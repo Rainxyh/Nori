@@ -76,7 +76,6 @@ add_executable(nori
   src/accel.cpp
   src/ao.cpp
   src/av.cpp
-  #src/area.cpp
   src/arealight.cpp
   src/pointlight.cpp
   src/disklight.cpp
@@ -89,8 +88,8 @@ add_executable(nori
   src/diffuse.cpp
   src/direct.cpp
   src/direct_ems.cpp
-  #src/direct_mats.cpp
-  #src/direct_mis.cpp
+  src/direct_mats.cpp
+  src/direct_mis.cpp
   src/gui.cpp
   src/independent.cpp
   src/main.cpp

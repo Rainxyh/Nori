@@ -9,7 +9,16 @@ NORI_NAMESPACE_BEGIN
 class Diffuse : public BSDF {
 public:
     Diffuse(const PropertyList &propList) {
+        m_type = BsdfType::BSDF_DIFFUSE;
         m_albedo = propList.getColor("albedo", Color3f(0.5f));
+
+        // get texture if present
+		// m_filename = propList.getString("filename", "none");
+		// if (m_filename != "none")
+		// {
+		// 	m_hasTexture = true;
+		// 	m_texture = Texture(m_filename);
+		// }
     }
 
     /// Evaluate the BRDF model
@@ -21,6 +30,11 @@ public:
             || Frame::cosTheta(bRec.wo) <= 0)
             return BLACK;
 
+        // if (m_hasTexture)
+		// {
+		// 	// get it from texture
+		// 	return m_texture.getval(bRec.uv.x(), bRec.uv.y()) * INV_PI;
+		// }
         /* The BRDF is simply the albedo / pi */
         return m_albedo * INV_PI;
     }
@@ -40,13 +54,13 @@ public:
            Note that the directions in 'bRec' are in local coordinates,
            so Frame::cosTheta() actually just returns the 'z' component.
         */
-        return INV_PI * Frame::cosTheta(bRec.wo);
+        return Warp::squareToCosineHemispherePdf(bRec.wo);
     }
 
     /// Draw a a sample from the BRDF model
     Color3f sample(BSDFQueryRecord &bRec, const Point2f &sample) const {
         if (Frame::cosTheta(bRec.wi) <= 0)
-            return Color3f(0.0f);
+            return BLACK;
 
         bRec.measure = ESolidAngle;
 
@@ -59,7 +73,10 @@ public:
 
         /* eval() / pdf() * cos(theta) = albedo. There
            is no need to call these functions. */
-        return m_albedo;
+        return m_albedo; // eval(bRec) / pdf(bRec) * Frame::cosTheta(bRec.wo);
+    }
+    Color3f sample(BSDFQueryRecord &bRec, Sampler* sampler) const {
+        return sample(bRec, sampler->next2D());
     }
 
     bool isDiffuse() const {

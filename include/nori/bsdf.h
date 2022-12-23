@@ -32,14 +32,6 @@ struct BSDFQueryRecord {
     /// Measure associated with the sample
     EMeasure measure;
 
-    /// Create a new record for sampling the BSDF
-    BSDFQueryRecord(const Vector3f& wi)
-        : wi(wi), eta(1.f), measure(EUnknownMeasure) {}
-
-    /// Create a new record for querying the BSDF
-    BSDFQueryRecord(const Vector3f& wi, const Vector3f& wo, EMeasure measure)
-        : wi(wi), wo(wo), eta(1.f), measure(measure) {}
-
     /// Additional information possibly needed by the BSDF
     /// UV associated with the point
     Point2f uv;
@@ -48,7 +40,15 @@ struct BSDFQueryRecord {
     Point3f p;
 
     /// pdf associated with this sample
-    float pdf;
+    float pdf = 0.f;
+
+    /// Create a new record for sampling the BSDF
+    BSDFQueryRecord(const Vector3f& wi)
+        : wi(wi), eta(1.f), measure(EUnknownMeasure) {}
+
+    /// Create a new record for querying the BSDF
+    BSDFQueryRecord(const Vector3f& wi, const Vector3f& wo, EMeasure measure)
+        : wi(wi), wo(wo), eta(1.f), measure(measure) {}
 };
 
 /**
@@ -69,8 +69,8 @@ class BSDF : public NoriObject {
      *         factor associated with the outgoing direction, when this
      *         is appropriate. A zero value means that sampling failed.
      */
-    virtual Color3f sample(BSDFQueryRecord& bRec,
-                           const Point2f& sample) const = 0;
+    virtual Color3f sample(BSDFQueryRecord &bRec, const Point2f& sample) const = 0;
+    virtual Color3f sample(BSDFQueryRecord &bRec, Sampler* sampler) const = 0;
 
     /**
      * \brief Evaluate the BSDF for a pair of directions and measure
@@ -111,6 +111,13 @@ class BSDF : public NoriObject {
      * or not to store photons on a surface
      */
     virtual bool isDiffuse() const { return false; }
+
+
+	BsdfType m_type;
+    
+protected:
+	// Texture					 m_texture;
+	// bool					 m_hasTexture = false;
 };
 
 NORI_NAMESPACE_END

@@ -36,6 +36,7 @@ public:
         BSDFQueryRecord bRec(its.toLocal(wo));
         Color3f fr = its.mesh->getBSDF()->sample(bRec, sampler->next2D());
         wi = its.toWorld(bRec.wo);
+        fr *= fmaxf(0.f, Nx.dot(wi));
         if (depth > 3)
         {
             fr /= RR;
@@ -82,6 +83,7 @@ public:
             BSDFQueryRecord bRec(its.toLocal(wo));
             fr *= its.mesh->getBSDF()->sample(bRec, sampler->next2D()); // sample a dir
             wi = its.toWorld(bRec.wo);
+            fr *= fmaxf(0.f, Nx.dot(wi));
             _ray = Ray3f(x, wi);
         }
         return Lo;

@@ -111,7 +111,7 @@ float Warp::squareToCosineHemispherePdf(const Vector3f& v) {
     float cos_theta = Frame::cosTheta(v);
     if (cos_theta < 0.0f)
         return 0.0f;
-    return cos_theta / M_PI;
+    return cos_theta * INV_PI;
 }
 
 /* Beckmann */
@@ -158,7 +158,7 @@ float Warp::squareToGgxPdf(const Vector3f& m, float alpha_g) {
     float term = alpha2 + tan_theta2;
     float term2 = term * term;
 
-    float D = alpha2 / (M_PI * cos_theta4 * term2);
+    float D = alpha2 / (cos_theta4 * term2) * INV_PI;
     return D * cos_theta;
 }
 

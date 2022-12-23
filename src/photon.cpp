@@ -29,7 +29,7 @@ PhotonData::PhotonData(const Vector3f &dir, const Color3f &power) {
     /* Convert the direction into an approximate spherical
        coordinate format to reduce storage requirements */
     theta = (uint8_t) std::min(255,
-        (int) (std::acos(dir.z()) * (256.0f / M_PI)));
+        (int) (std::acos(dir.z()) * (256.0f * INV_PI)));
 
     int tmp = std::min(255,
         (int) (std::atan2(dir.y(), dir.x()) * (256.0f / (2.0f * M_PI))));

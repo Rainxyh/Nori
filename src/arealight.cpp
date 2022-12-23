@@ -28,6 +28,21 @@ class AreaLight : public Emitter {
         return eval(lRec.n, lRec.wi);
     }
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
+	// Returns probability with respect to solid angle given by all the information inside the emitterqueryrecord.
+	// Assumes all information about the intersection point is already provided inside.
+	// WARNING: Use with care. Malformed EmitterQueryRecords can result in undefined behavior. Plus no visibility is considered.
+    virtual float pdf(const EmitterQueryRecord& lRec) const {
+        if (!m_mesh)
+            throw NoriException(
+                "There is no shape attached to this Area light!");
+
+        float cosTheta = fmax(lRec.n.dot(lRec.wi), 0.f);
+        // Contains the conversion from differential solid angle to differential area
+        float pW = lRec.dist * lRec.dist / (cosTheta * m_mesh->surfaceArea()); 
+        if (isnan(pW) || fabsf(pW) == INFINITY) return 0.0f;
+        return pW;
+    }
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
     virtual Color3f sample(EmitterQueryRecord & lRec, Sampler* sampler) const {
         if(!m_mesh)
             throw NoriException("There is no shape attached to this Area light!");
@@ -43,29 +58,12 @@ class AreaLight : public Emitter {
 		lRec.pdf = pdf(lRec);
 		// Return the appropriately weighted radiance term back
 		// NOTE: We are not checking visibility here. It's the integrator's responsibility to check for the shadow ray test.
-		if(lRec.pdf != 0.0f || fabsf(lRec.pdf) != INFINITY) return eval(lRec) / lRec.pdf;
-		else return 0.0f;
+		if(lRec.pdf == 0.0f || fabsf(lRec.pdf) == INFINITY) return 0.0f;
+		return eval(lRec) / lRec.pdf;
     }
     virtual void sampleWithoutCal(EmitterQueryRecord & lRec, Sampler *sampler) const {
         m_mesh->uniformSample(sampler, lRec.p, lRec.n, lRec.pdf); // sample triangle from mesh
         lRec.mesh = m_mesh;
-    }
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-	// Returns probability with respect to solid angle given by all the information inside the emitterqueryrecord.
-	// Assumes all information about the intersection point is already provided inside.
-	// WARNING: Use with care. Malformed EmitterQueryRecords can result in undefined behavior. Plus no visibility is considered.
-    virtual float pdf(const EmitterQueryRecord& lRec) const {
-        if (!m_mesh)
-            throw NoriException(
-                "There is no shape attached to this Area light!");
-
-        Vector3f inv_wi = lRec.wi;
-        float costheta_here = fabsf(lRec.n.dot(inv_wi));
-        // Contains the conversion from differential solid angle to differential area
-        float pW = lRec.dist * lRec.dist / (costheta_here * m_mesh->surfaceArea()); 
-        if (isnan(pW) || fabsf(pW) == INFINITY)
-            return 0.0f;
-        return pW;
     }
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
     virtual Color3f getRadiance() const {

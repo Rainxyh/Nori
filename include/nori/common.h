@@ -207,7 +207,7 @@ There are multiple weak symbols at the same time, choose the one that occupies t
 The "inline" function is a weak symbol, and the error "multiple definitions of xxx" will not be reported during linking after repeated definitions.
 Warnning: When the compiler optimization switch is turned off, the inline function may be replaced by another function with the same name, thus affecting the correctness of the business logic. */
 //// Convert radians to degrees
-inline float radToDeg(float value) { return value * (180.0f / M_PI); }
+inline float radToDeg(float value) { return value * (180.0f * INV_PI); }
 
 /// Convert degrees to radians
 inline float degToRad(float value) { return value * (M_PI / 180.0f); }
@@ -263,7 +263,6 @@ extern Point2f sphericalCoordinates(const Vector3f &dir);
  *      Refractive index of the interior
  */
 extern float fresnel(float cosThetaI, float extIOR, float intIOR);
-
 extern float fresnel(float cosThetaI, float extIOR, float intIOR, const Vector3f &wi, Vector3f &wo);
 
 /**
@@ -273,5 +272,20 @@ extern float fresnel(float cosThetaI, float extIOR, float intIOR, const Vector3f
  * texture files) referenced by a scene being loaded
  */
 extern filesystem::resolver *getFileResolver();
+
+template<typename T>
+inline T square(T val) { return val * val; }
+
+template<typename T>
+inline T cubed(T val) { return square(val) * val; }
+
+// This is the special function that gives two random numbers from one random number based on the cutoff value
+inline float twoRandsFromOne(float input, float cutoff)
+{
+	if (input < cutoff)
+		return input / cutoff;
+	else
+		return (input - cutoff) / (1.0f - cutoff);
+}
 
 NORI_NAMESPACE_END

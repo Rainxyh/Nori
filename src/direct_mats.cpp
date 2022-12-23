@@ -18,6 +18,11 @@ public:
 		// Empty destructor for now.	
 	}
 
+	Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &ray, size_t depth) const
+	{
+		return Li(scene, sampler, ray);
+	}
+
 	Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &ray) const
 	{
 		/* Find the surface that is visible in the requested direction */
@@ -47,7 +52,7 @@ public:
 		bRec.p = its.p;
 		bRec.uv = its.uv;
 		
-		Color3f f = bsdf->sample(bRec, sampler->next2D(), sampler->next1D());
+		Color3f fr = bsdf->sample(bRec, sampler->next2D());
 		const Ray3f shadow_ray(its.p, its.toWorld(bRec.wo), Epsilon, INFINITY);
 		Intersection s_isect;
 		if (scene->rayIntersect(shadow_ray, s_isect))
@@ -59,25 +64,25 @@ public:
 				EmitterQueryRecord eRec;
 				eRec.ref = shadow_ray.o;
 				eRec.emitter = s_isect.mesh->getEmitter();
-				eRec.wi = its.toWorld(bRec.wo);
+				eRec.wi = its.toWorld(-bRec.wo);
 				eRec.n = s_isect.shFrame.n;
 				eRec.p = s_isect.p;
 				eRec.dist = (eRec.p - eRec.ref).norm();
 
 				// Get the radiance along the intersected direction
 				const Emitter* e = s_isect.mesh->getEmitter();
+				// Currently sampling bsdf, no need to consider the pdf of the light source, just eval
 				Color3f Li = e->eval(eRec);
-
 				// Compute the direct lighting equation.
-				Color3f evalTerm = f * Li * fmaxf(its.shFrame.n.dot(eRec.wi), 0.0f);
-				Ld += evalTerm;
+				Ld += fr * Li ;
 			}
 		}
 		else
 		{
 			// Check if light is directional?
 			Color3f Li = scene->getBackground(shadow_ray);
-			Ld += f * Li * fmaxf(its.shFrame.n.dot(shadow_ray.d), 0.0f);
+			// Compute the direct lighting equation.
+			Ld += fr * Li ;
 		}
 
 		return Ld;

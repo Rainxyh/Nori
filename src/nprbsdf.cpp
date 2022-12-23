@@ -21,7 +21,7 @@ public:
         if (bRec.measure != ESolidAngle
             || Frame::cosTheta(bRec.wi) <= 0
             || Frame::cosTheta(bRec.wo) <= 0)
-            return Color3f(0.0f);
+            return BLACK;
 
         // compute half vector
         const Vector3f half = (bRec.wi + bRec.wo) * 0.5f;
@@ -40,6 +40,9 @@ public:
     /// Draw a a sample from the BRDF model
     Color3f sample(BSDFQueryRecord &bRec, const Point2f &sample) const {
         return 0.f;
+    }
+    Color3f sample(BSDFQueryRecord& bRec, Sampler* sampler) const {
+        return sample(bRec, sampler->next2D());
     }
 
     bool isDiffuse() const {

@@ -18,7 +18,7 @@ public:
     {
         Intersection its;
         if (!scene->rayIntersect(ray, its))
-            return Color3f(0.0f);
+            return BLACK;
 
         Color3f color(0.f);
         Point3f p = its.p;

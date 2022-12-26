@@ -89,4 +89,54 @@ struct TRay {
     }
 };
 
+template<typename _PointType, typename _VectorType> 
+struct TRayDifferential : public TRay<_PointType, _VectorType>
+{
+    typedef _PointType                  PointType;
+    typedef _VectorType                 VectorType;
+    typedef typename PointType::Scalar  Scalar;
+
+    TRayDifferential() : TRay<_PointType, _VectorType>() {
+        m_quality = 0;
+        m_hasRayDifferentials = false;
+    }
+
+    TRayDifferential(int quality) : TRay<_PointType, _VectorType>() {
+        m_quality = quality;
+    }
+
+    TRayDifferential(const PointType &o, const VectorType &d) : TRay<_PointType, _VectorType>(o, d) {}
+    TRayDifferential(const TRay<_PointType, _VectorType> &ray) : TRay<_PointType, _VectorType>(ray) {}
+    TRayDifferential(const TRay<_PointType, _VectorType> &ray, Scalar mint, Scalar maxt) : TRay<_PointType, _VectorType>(ray, mint, maxt) {}
+    TRay<_PointType, _VectorType> getRay() const { return TRay<_PointType, _VectorType>(this->o, this->d, this->mint, this->maxt); }
+    
+    void setStencilRay(const int index, const TRay<_PointType, _VectorType>& ray) {
+        m_stencilRays.at(index) = ray;
+    }
+    
+    const TRay<_PointType, _VectorType>& getStencilRay(const int index) const {
+        return (m_stencilRays.at(index));
+    }
+    
+    // We use these two methods to initialize the ray stencils
+    void setQuality(int quality) {
+        m_quality = quality;
+        setupRayDifferential();
+    }
+    void setupRayDifferential() {
+        m_totalStencilRays = 4 * m_quality * (m_quality + 1);
+        m_stencilRays.resize(m_totalStencilRays);
+        m_hasRayDifferentials = true;
+    }
+
+    // We have an additional circle stencil of rays
+    // each circle has 8 rays
+    // so total number of rays is 8 * n(n+1) / 2
+    // plus the additional central ray
+    std::vector<TRay<_PointType, _VectorType>> m_stencilRays;
+    int m_quality;
+    int m_totalStencilRays;
+    bool m_hasRayDifferentials;
+};
+
 NORI_NAMESPACE_END

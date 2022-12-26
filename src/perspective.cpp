@@ -30,6 +30,10 @@ public:
         m_farClip = propList.getFloat("farClip", 1e4f);
 
         m_rfilter = NULL;
+
+        // Data for stencils
+        m_rayStencilQuality = propList.getInteger("quality", 0);
+        m_rayStencilMaskSize = propList.getFloat("maskSize", 0.f);
     }
 
     void activate() {
@@ -90,6 +94,60 @@ public:
         return Color3f(1.0f);
     }
 
+    virtual Color3f sampleRayDifferential(RayDifferential& ray, const Point2f &samplePosition, const Point2f &apertureSample) const {
+        /* Compute the corresponding position on the
+        near plane (in local camera space) */
+        Point3f nearP = m_sampleToCamera * Point3f(
+            samplePosition.x() * m_invOutputSize.x(),
+            samplePosition.y() * m_invOutputSize.y(), 0.0f);
+
+        /* Turn into a normalized ray direction, and
+        adjust the ray interval accordingly */
+        Vector3f d = nearP.normalized();
+        float invZ = 1.0f / d.z();
+
+        ray.o = m_cameraToWorld * Point3f(0, 0, 0);
+        ray.d = m_cameraToWorld * d;
+        ray.mint = m_nearClip * invZ;
+        ray.maxt = m_farClip * invZ;
+        ray.update();
+
+        // create the raydifferentials
+        ray.setQuality(m_rayStencilQuality);
+        if (m_rayStencilQuality > 0) {
+            int startSplit = 4;
+            int index = 0;
+            for (int q = 0; q < ray.m_quality; q++) {
+                // Each quality circle has a set of sample locations
+                // We start with 4 splits
+                float deltaAngle = M_PI / float(startSplit);
+                float radius = (m_rayStencilMaskSize / float(m_rayStencilQuality)) * (q + 1);
+                for (int nsplit = 0; nsplit < 8; nsplit++) {
+                    // The same logic applies here as the creation of the general ray
+                    float angle = deltaAngle * nsplit;
+                    Point2f samplePt = Point2f(radius * cos(angle), radius * sin(angle)) + samplePosition;
+                    Point3f nP = m_sampleToCamera * Point3f(
+                        samplePt.x() * m_invOutputSize.x(),
+                        samplePt.y() * m_invOutputSize.y(), 0.f);
+                    Vector3f nD = nP.normalized();
+                    float nInvZ = 1.0f / nD.z();
+
+                    Ray3f sRay;
+                    sRay.o = ray.o;
+                    sRay.d = m_cameraToWorld * nD;
+                    sRay.mint = m_nearClip * nInvZ;
+                    sRay.maxt = m_farClip * nInvZ;
+                    sRay.update();
+                    ray.setStencilRay(index, sRay);
+                    index++;
+                }
+                // increment the next ring of rays
+                startSplit++;
+            }
+        }
+        return Color3f(1.0f);
+    }
+
     void addChild(NoriObject *obj) {
         switch (obj->getClassType()) {
             case EReconstructionFilter:
@@ -129,6 +187,10 @@ private:
     float m_fov;
     float m_nearClip;
     float m_farClip;
+    
+    // RayDifferential
+    int m_rayStencilQuality;
+    float m_rayStencilMaskSize;
 };
 
 NORI_REGISTER_CLASS(PerspectiveCamera, "perspective");

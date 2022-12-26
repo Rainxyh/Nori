@@ -37,13 +37,20 @@ static void renderBlock(const Scene *scene, Sampler *sampler, ImageBlock &block)
                 Point2f apertureSample = sampler->next2D();
 
                 /* Sample a ray from the camera */
+#if false
                 Ray3f ray;
-                Color3f value = camera->sampleRay(ray, pixelSample, apertureSample);
+                Color3f value =
+                    camera->sampleRay(ray, pixelSample, apertureSample);
+#else
+                RayDifferential ray;
+                Color3f value = camera->sampleRayDifferential(ray, pixelSample, apertureSample);
+#endif
 
                 /* Compute the incident radiance */
-                // value *= integrator->Li(scene, sampler, ray); // iterator version
+                // value *= integrator->Li(scene, sampler, ray); // iterator
                 size_t depth = 0;
-                value *= integrator->Li(scene, sampler, ray, depth); // recursion version
+                // value *= integrator->Li(scene, sampler, ray, depth); // recursion
+                value *= integrator->Li(scene, sampler, ray); // ray differential
 
                 /* Store in the image block */
                 block.put(pixelSample, value);

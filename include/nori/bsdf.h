@@ -5,13 +5,14 @@
 
 NORI_NAMESPACE_BEGIN
 
-enum class BsdfType
+enum class BSDFType
 {
 	BSDF_DIFFUSE,
 	BSDF_MIRROR,
 	BSDF_DIELECTRIC,
 	BSDF_MICROFACET,
 	BSDF_ROUGHDIELECTRIC,
+
 	BSDF_NULL
 };
 
@@ -110,12 +111,12 @@ class BSDF : public NoriObject {
      * is primarily used by photon mapping to decide whether
      * or not to store photons on a surface
      */
-    virtual bool isDiffuse() const { return false; }
+    bool isDiffuse() const { return m_type == BSDFType::BSDF_DIFFUSE; }
 
-
-	BsdfType m_type;
+    bool isDelta() const { return m_type == BSDFType::BSDF_MIRROR || m_type == BSDFType::BSDF_DIELECTRIC; }
     
 protected:
+	BSDFType m_type;
 	// Texture					 m_texture;
 	// bool					 m_hasTexture = false;
 };

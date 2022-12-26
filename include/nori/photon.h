@@ -1,5 +1,4 @@
-#if !defined(__NORI_PHOTON_H)
-#define __NORI_PHOTON_H
+#pragma once
 
 #include <nori/kdtree.h>
 #include <nori/color.h>
@@ -69,5 +68,3 @@ public:
 };
 
 NORI_NAMESPACE_END
-
-#endif /* __NORI_PHOTON_H */

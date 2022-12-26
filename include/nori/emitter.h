@@ -10,6 +10,7 @@ enum class EmitterType
 	EMITTER_DISTANT_DISK,
 	EMITTER_AREA,
 	EMITTER_ENVIRONMENT,
+
 	EMITTER_UNKNOWN
 };
 
@@ -87,9 +88,8 @@ class Emitter : public NoriObject {
      * associated with the outgoing direction, when this is appropriate. A zero
      * value means that sampling failed.
      */
-    virtual void sampleWithoutCal(EmitterQueryRecord& lRec, Sampler* sampler) const = 0;
     virtual Color3f sample(EmitterQueryRecord &lRec, Sampler* sampler) const = 0;
-
+    
     /**
      * \brief Evaluate the Emitter for a pair of directions and measure
      * specified in \code eRec
@@ -131,6 +131,8 @@ class Emitter : public NoriObject {
         throw NoriException("Emitter::samplePhoton(): not implemented!");
     }
 
+    bool isDelta() const { return m_type == EmitterType::EMITTER_POINT; }
+
     /**
      * \brief Return the type of object (i.e. Mesh/Emitter/etc.)
      * provided by this instance
@@ -138,9 +140,9 @@ class Emitter : public NoriObject {
     EClassType getClassType() const { return EEmitter; }
 
    protected:
+    EmitterType m_type;
     /// Pointer to the mesh if the emitter is attached to a mesh
     Mesh* m_mesh = nullptr;
-    EmitterType m_type;
 };
 
 inline std::string EmitterQueryRecord::toString() const {

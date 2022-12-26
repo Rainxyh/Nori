@@ -34,7 +34,12 @@ public:
      *    A (usually) unbiased estimate of the radiance in this direction
      */
     virtual Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &ray) const = 0; 
-    virtual Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &ray, size_t depth) const = 0;
+    virtual Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &ray, size_t depth) const {
+        return Li(scene, sampler, ray);
+    };
+    virtual Color3f Li(const Scene* scene, Sampler *sampler, const RayDifferential &rayDifferential) const {
+        return Li(scene, sampler, rayDifferential.getRay());
+    }; 
 
     /**
      * \brief Return the type of object (i.e. Mesh/BSDF/etc.) 

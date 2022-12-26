@@ -71,47 +71,61 @@ add_executable(nori
   include/nori/transform.h
   include/nori/vector.h
   include/nori/warp.h
+  
+  # BSDF
+  src/bsdf/dielectric.cpp
+  src/bsdf/diffuse.cpp
+  src/bsdf/microfacet.cpp
+  src/bsdf/mirror.cpp
+  
+  # Emitters
+  src/emitter/arealight.cpp
+  src/emitter/disklight.cpp
+  #src/emitter/environmentlight.cpp
+  src/emitter/pointlight.cpp
+  
+  # Integrators
+   # direct
+    src/integrator/direct/direct_ems.cpp
+    src/integrator/direct/direct_mats.cpp
+    src/integrator/direct/direct_mis.cpp
+    src/integrator/direct/direct.cpp
+   # path
+    src/integrator/path/path_ems.cpp
+    src/integrator/path/path_mats.cpp
+    #src/integrator/path/path_mis_ite.cpp
+    src/integrator/path/path_mis.cpp
+    src/integrator/path/whitted.cpp
+   # toy
+    src/integrator/toy/ambient_occlusion.cpp
+    src/integrator/toy/average_visibility.cpp
+    src/integrator/toy/normals.cpp
+    src/integrator/toy/nprintegrator.cpp
+    src/integrator/toy/simple.cpp
+   # volume
+    
 
   # Source code files
   src/accel.cpp
-  src/ao.cpp
-  src/av.cpp
-  src/arealight.cpp
-  src/pointlight.cpp
-  src/disklight.cpp
   src/bitmap.cpp
   src/block.cpp
   src/bvh.cpp
   src/chi2test.cpp
   src/common.cpp
-  src/dielectric.cpp
-  src/diffuse.cpp
-  src/direct.cpp
-  src/direct_ems.cpp
-  src/direct_mats.cpp
-  src/direct_mis.cpp
   src/gui.cpp
   src/independent.cpp
   src/main.cpp
   src/mesh.cpp
   src/texture_image.cpp
-  src/microfacet.cpp
-  src/mirror.cpp
-  src/normals.cpp
   src/obj.cpp
   src/object.cpp
   src/parser.cpp
-  src/path_ems.cpp
-  src/path_mats.cpp
-  src/path_mis.cpp
   src/perspective.cpp
   src/proplist.cpp
   src/rfilter.cpp
   src/scene.cpp
-  src/simple.cpp
   src/ttest.cpp
   src/warp.cpp
-  src/whitted.cpp
 )
 
 add_definitions(${NANOGUI_EXTRA_DEFS})
@@ -121,7 +135,7 @@ add_executable(warptest
   include/nori/warp.h
   src/warp.cpp
   src/warptest.cpp
-  src/microfacet.cpp
+  src/bsdf/microfacet.cpp
   src/object.cpp
   src/proplist.cpp
   src/common.cpp

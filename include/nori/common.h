@@ -62,6 +62,7 @@ NORI_NAMESPACE_BEGIN
 template <typename Scalar, int Dimension>  struct TVector;
 template <typename Scalar, int Dimension>  struct TPoint;
 template <typename Point, typename Vector> struct TRay;
+template <typename Point, typename Vector> struct TRayDifferential;
 template <typename Point>                  struct TBoundingStructure;
 template <typename Point>                  struct TBoundingBox;
 template <typename Point>                  struct TBoundingBugBox;
@@ -112,7 +113,7 @@ typedef TBoundingSphere<Point3f>    BoundingSphere;
 typedef TBoundingStructure<Point3f> BoundingStructure;
 typedef TRay<Point2f, Vector2f> Ray2f;
 typedef TRay<Point3f, Vector3f> Ray3f;
-
+typedef TRayDifferential<Point3f, Vector3f> RayDifferential;
 typedef Eigen::Matrix<float,    Eigen::Dynamic, Eigen::Dynamic> MatrixXf;
 typedef Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic> MatrixXu;
 

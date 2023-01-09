@@ -105,6 +105,22 @@ struct Frame {
         return clamp(v.x() * v.x() / sinTheta2(v), 0.0f, 1.0f);
     }
 
+	static Vector3f spherical_direction(float sin_theta, float cos_theta, float phi)
+	{
+		return Vector3f(sin_theta * cosf(phi), sin_theta * sinf(phi), cos_theta);
+	}
+
+	static float spherical_theta(const Vector3f& v)
+	{
+		return acosf(clamp(v.z(), -1.0f, 1.0f));
+	}
+
+	static float spherical_phi(const Vector3f& v)
+	{
+		float p = atan2f(v.x(), v.y());
+		return p < 0.0f ? p + 2 * M_PI : p;
+	}
+
     /// Equality test
     bool operator==(const Frame &frame) const {
         return frame.s == s && frame.t == t && frame.n == n;

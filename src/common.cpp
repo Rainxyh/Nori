@@ -264,32 +264,8 @@ void coordinateSystem(const Vector3f &a, Vector3f &b, Vector3f &c) {
 }
 
 float fresnel(float cosThetaI, float extIOR, float intIOR) {
-    float etaI = extIOR, etaT = intIOR;
-
-    if (extIOR == intIOR)
-        return 0.0f;
-
-    /* Swap the indices of refraction if the interaction starts
-       at the inside of the object */
-    if (cosThetaI < 0.0f)
-    {
-        std::swap(etaI, etaT);
-        cosThetaI = -cosThetaI;
-    }
-
-    /* Using Snell's law, calculate the squared sine of the
-       angle between the normal and the transmitted ray */
-    float eta = etaI / etaT,
-          sinThetaTSqr = eta * eta * (1 - cosThetaI * cosThetaI),
-          cosThetaT = std::sqrt(1.0f - sinThetaTSqr);
-
-    if (sinThetaTSqr > 1.0f)
-        return 1.0f; /* Total internal reflection! */
-
-    float Rs = (etaI * cosThetaI - etaT * cosThetaT) / (etaI * cosThetaI + etaT * cosThetaT);
-    float Rp = (etaT * cosThetaI - etaI * cosThetaT) / (etaT * cosThetaI + etaI * cosThetaT);
-
-    return (Rs * Rs + Rp * Rp) / 2.0f;
+    Vector3f wo;
+    return fresnel(cosThetaI, extIOR, intIOR, Vector3f(1.f), wo);
 }
 
 float fresnel(float cosThetaI, float extIOR, float intIOR, const Vector3f &wi, Vector3f &wo) {
@@ -322,6 +298,14 @@ float fresnel(float cosThetaI, float extIOR, float intIOR, const Vector3f &wi, V
     wo = Vector3f(sqrt(sinThetaTSqr) / sinThetaI * -wi.x(), sqrt(sinThetaTSqr) / sinThetaI * -wi.y(), cosThetaT / cosThetaI * -wi.z());
 
     return (Rs * Rs + Rp * Rp) / 2.0f;
+}
+
+Color3f sphericalGaussianApprox(const Color3f &F0, const Vector3f &v, const Vector3f &h){
+    return F0 + (1.f - F0) * pow(2, (-5.55473 * v.dot(h) - 6.98316) * v.dot(h));
+}
+
+Color3f schlickApprox(const Color3f &F0, const Vector3f &v, const Vector3f &h){
+    return F0 + (1.f - F0) * pow(1 - v.dot(h), 5);
 }
 
 NORI_NAMESPACE_END

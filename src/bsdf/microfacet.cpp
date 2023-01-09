@@ -56,10 +56,10 @@ public:
 
 		Color3f diffuse = m_kd * INV_PI;
 
-		Normal3f w_h = (bRec.wi + bRec.wo).normalized();
-		float D = DistributeBeckmann(w_h, m_alpha);
-		float F = fresnel(w_h.dot(bRec.wi), m_extIOR, m_intIOR);
-		float G = smithBeckmannG1(bRec.wi, w_h, m_alpha) * smithBeckmannG1(bRec.wo, w_h, m_alpha);
+		Normal3f wh = (bRec.wi + bRec.wo).normalized();
+		float D = DistributeBeckmann(wh, m_alpha);
+		float F = fresnel(wh.dot(bRec.wi), m_extIOR, m_intIOR);
+		float G = smithBeckmannG1(bRec.wi, wh, m_alpha) * smithBeckmannG1(bRec.wo, wh, m_alpha);
 
 		Color3f specular = m_ks * D * F * G / (4 * (Frame::cosTheta(bRec.wi) * Frame::cosTheta(bRec.wo)));
 		if (!specular.isValid()) specular = BLACK;
@@ -72,12 +72,17 @@ public:
 		if (Frame::cosTheta(bRec.wo) <= 0.0f || Frame::cosTheta(bRec.wi) <= 0.0f) return 0.0f;
 		
 		float dpdf = (1.0f - m_ks) * Warp::squareToCosineHemispherePdf(bRec.wo);
-		Normal3f w_h = (bRec.wi + bRec.wo).normalized();
-		float jacobian = 0.25f / (w_h.dot(bRec.wo));
-		float spdf = m_ks * Warp::squareToBeckmannPdf(w_h, m_alpha) * jacobian;
+		Normal3f wh = (bRec.wi + bRec.wo).normalized();
+        /* The microsurface model samples the direction of the normal h of the microsurface, and 
+           the solid angle element of the probability density is the hemisphere determined relative to the normal h of the microsurface, 
+           rather than the hemisphere determined by the normal n of the macroscopic surface, 
+           so the probability reflection projection from the normal of the microsurface When the light probability is obtained, 
+           it needs to be multiplied by the corresponding Jacobian matrix determinant. */
+		float jacobian = 0.25f / (wh.dot(bRec.wo));
+		float spdf = m_ks * Warp::squareToBeckmannPdf(wh, m_alpha) * jacobian;
 		if (isnan(dpdf)) dpdf = 0.0f;
 		if (isnan(spdf)) spdf = 0.0f;
-		return spdf + dpdf;
+		return dpdf + spdf;
     }
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
     /// Sample the BRDF

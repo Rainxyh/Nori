@@ -1,0 +1,73 @@
+Date : 2022-12-29 19:07:47
+Directory : /home/sim/Github/Nori
+Total : 33 files,  213 codes, 7 comments, 47 blanks, all 267 lines
+
+Languages
++-------------+------------+------------+------------+------------+------------+
+| language    | files      | code       | comment    | blank      | total      |
++-------------+------------+------------+------------+------------+------------+
+| XML         |          2 |        147 |          2 |         41 |        190 |
+| CUDA C++    |          8 |         53 |          5 |         10 |         68 |
+| C++         |         22 |         24 |          0 |         -3 |         21 |
+| Objective-C |          1 |        -11 |          0 |         -1 |        -12 |
++-------------+------------+------------+------------+------------+------------+
+
+Directories
++-----------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                            | files      | code       | comment    | blank      | total      |
++-----------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                               |         33 |        213 |          7 |         47 |        267 |
+| include                                                         |          8 |         53 |          5 |         10 |         68 |
+| include/nori                                                    |          8 |         53 |          5 |         10 |         68 |
+| scenes_old                                                      |          2 |        147 |          2 |         41 |        190 |
+| scenes_old/pa4                                                  |          2 |        147 |          2 |         41 |        190 |
+| scenes_old/pa4/cbox                                             |          1 |         50 |          0 |         17 |         67 |
+| scenes_old/pa4/clocks                                           |          1 |         97 |          2 |         24 |        123 |
+| src                                                             |         22 |         24 |          0 |         -3 |         21 |
+| src/bsdf                                                        |          1 |          0 |          5 |          0 |          5 |
+| src/emitter                                                     |          3 |        -10 |          0 |          1 |         -9 |
+| src/integrator                                                  |         14 |         -8 |          4 |         -6 |        -10 |
+| src/integrator/direct                                           |          4 |        -30 |         -6 |         -6 |        -42 |
+| src/integrator/path                                             |          5 |         38 |          9 |          9 |         56 |
+| src/integrator/toy                                              |          5 |        -16 |          1 |         -9 |        -24 |
++-----------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-----------------------------------------------------------------+-------------+------------+------------+------------+------------+
+| filename                                                        | language    | code       | comment    | blank      | total      |
++-----------------------------------------------------------------+-------------+------------+------------+------------+------------+
+| /home/sim/Github/Nori/chitest.m                                 | Objective-C |        -11 |          0 |         -1 |        -12 |
+| /home/sim/Github/Nori/include/nori/camera.h                     | CUDA C++    |         -3 |          0 |          0 |         -3 |
+| /home/sim/Github/Nori/include/nori/common.h                     | CUDA C++    |          2 |          0 |         -1 |          1 |
+| /home/sim/Github/Nori/include/nori/distribution.h               | CUDA C++    |         35 |          4 |         15 |         54 |
+| /home/sim/Github/Nori/include/nori/distributions.h              | CUDA C++    |        -35 |         -4 |        -15 |        -54 |
+| /home/sim/Github/Nori/include/nori/emitter.h                    | CUDA C++    |         -1 |          0 |          0 |         -1 |
+| /home/sim/Github/Nori/include/nori/frame.h                      | CUDA C++    |         13 |          0 |          3 |         16 |
+| /home/sim/Github/Nori/include/nori/integrator.h                 | CUDA C++    |          5 |          0 |          0 |          5 |
+| /home/sim/Github/Nori/include/nori/ray.h                        | CUDA C++    |         37 |          5 |          8 |         50 |
+| /home/sim/Github/Nori/scenes_old/pa4/cbox/cbox_npr.xml          | XML         |         50 |          0 |         17 |         67 |
+| /home/sim/Github/Nori/scenes_old/pa4/clocks/clocks_npr.xml      | XML         |         97 |          2 |         24 |        123 |
+| /home/sim/Github/Nori/src/bsdf/microfacet.cpp                   | C++         |          0 |          5 |          0 |          5 |
+| /home/sim/Github/Nori/src/common.cpp                            | C++         |         -8 |         -4 |         -4 |        -16 |
+| /home/sim/Github/Nori/src/emitter/arealight.cpp                 | C++         |         -4 |          0 |          0 |         -4 |
+| /home/sim/Github/Nori/src/emitter/disklight.cpp                 | C++         |         -3 |          0 |          0 |         -3 |
+| /home/sim/Github/Nori/src/emitter/pointlight.cpp                | C++         |         -3 |          0 |          1 |         -2 |
+| /home/sim/Github/Nori/src/integrator/direct/direct.cpp          | C++         |         -4 |          0 |         -1 |         -5 |
+| /home/sim/Github/Nori/src/integrator/direct/direct_ems.cpp      | C++         |         -8 |         -2 |         -1 |        -11 |
+| /home/sim/Github/Nori/src/integrator/direct/direct_mats.cpp     | C++         |         -9 |         -2 |         -2 |        -13 |
+| /home/sim/Github/Nori/src/integrator/direct/direct_mis.cpp      | C++         |         -9 |         -2 |         -2 |        -13 |
+| /home/sim/Github/Nori/src/integrator/path/path.cpp              | C++         |         46 |          9 |          9 |         64 |
+| /home/sim/Github/Nori/src/integrator/path/path_ems.cpp          | C++         |         -2 |          0 |          0 |         -2 |
+| /home/sim/Github/Nori/src/integrator/path/path_mats.cpp         | C++         |         -2 |          0 |          0 |         -2 |
+| /home/sim/Github/Nori/src/integrator/path/path_mis.cpp          | C++         |         -2 |          0 |          0 |         -2 |
+| /home/sim/Github/Nori/src/integrator/path/whitted.cpp           | C++         |         -2 |          0 |          0 |         -2 |
+| /home/sim/Github/Nori/src/integrator/toy/ambient_occlusion.cpp  | C++         |         -4 |          0 |         -1 |         -5 |
+| /home/sim/Github/Nori/src/integrator/toy/average_visibility.cpp | C++         |         -4 |          0 |         -1 |         -5 |
+| /home/sim/Github/Nori/src/integrator/toy/normals.cpp            | C++         |         -4 |          0 |         -1 |         -5 |
+| /home/sim/Github/Nori/src/integrator/toy/nprintegrator.cpp      | C++         |          0 |          1 |         -5 |         -4 |
+| /home/sim/Github/Nori/src/integrator/toy/simple.cpp             | C++         |         -4 |          0 |         -1 |         -5 |
+| /home/sim/Github/Nori/src/main.cpp                              | C++         |          6 |          1 |          0 |          7 |
+| /home/sim/Github/Nori/src/perspective.cpp                       | C++         |         44 |         11 |          7 |         62 |
+| /home/sim/Github/Nori/src/render.cpp                            | C++         |          0 |        -17 |         -1 |        -18 |
+| Total                                                           |             |        213 |          7 |         47 |        267 |
++-----------------------------------------------------------------+-------------+------------+------------+------------+------------+

@@ -1,0 +1,35 @@
+"filename", "language", "C++", "CUDA C++", "XML", "Objective-C", "comment", "blank", "total"
+"/home/sim/Github/Nori/chitest.m", "Objective-C", 0, 0, 0, -11, 0, -1, -12
+"/home/sim/Github/Nori/include/nori/camera.h", "CUDA C++", 0, -3, 0, 0, 0, 0, -3
+"/home/sim/Github/Nori/include/nori/common.h", "CUDA C++", 0, 2, 0, 0, 0, -1, 1
+"/home/sim/Github/Nori/include/nori/distribution.h", "CUDA C++", 0, 35, 0, 0, 4, 15, 54
+"/home/sim/Github/Nori/include/nori/distributions.h", "CUDA C++", 0, -35, 0, 0, -4, -15, -54
+"/home/sim/Github/Nori/include/nori/emitter.h", "CUDA C++", 0, -1, 0, 0, 0, 0, -1
+"/home/sim/Github/Nori/include/nori/frame.h", "CUDA C++", 0, 13, 0, 0, 0, 3, 16
+"/home/sim/Github/Nori/include/nori/integrator.h", "CUDA C++", 0, 5, 0, 0, 0, 0, 5
+"/home/sim/Github/Nori/include/nori/ray.h", "CUDA C++", 0, 37, 0, 0, 5, 8, 50
+"/home/sim/Github/Nori/scenes_old/pa4/cbox/cbox_npr.xml", "XML", 0, 0, 50, 0, 0, 17, 67
+"/home/sim/Github/Nori/scenes_old/pa4/clocks/clocks_npr.xml", "XML", 0, 0, 97, 0, 2, 24, 123
+"/home/sim/Github/Nori/src/bsdf/microfacet.cpp", "C++", 0, 0, 0, 0, 5, 0, 5
+"/home/sim/Github/Nori/src/common.cpp", "C++", -8, 0, 0, 0, -4, -4, -16
+"/home/sim/Github/Nori/src/emitter/arealight.cpp", "C++", -4, 0, 0, 0, 0, 0, -4
+"/home/sim/Github/Nori/src/emitter/disklight.cpp", "C++", -3, 0, 0, 0, 0, 0, -3
+"/home/sim/Github/Nori/src/emitter/pointlight.cpp", "C++", -3, 0, 0, 0, 0, 1, -2
+"/home/sim/Github/Nori/src/integrator/direct/direct.cpp", "C++", -4, 0, 0, 0, 0, -1, -5
+"/home/sim/Github/Nori/src/integrator/direct/direct_ems.cpp", "C++", -8, 0, 0, 0, -2, -1, -11
+"/home/sim/Github/Nori/src/integrator/direct/direct_mats.cpp", "C++", -9, 0, 0, 0, -2, -2, -13
+"/home/sim/Github/Nori/src/integrator/direct/direct_mis.cpp", "C++", -9, 0, 0, 0, -2, -2, -13
+"/home/sim/Github/Nori/src/integrator/path/path.cpp", "C++", 46, 0, 0, 0, 9, 9, 64
+"/home/sim/Github/Nori/src/integrator/path/path_ems.cpp", "C++", -2, 0, 0, 0, 0, 0, -2
+"/home/sim/Github/Nori/src/integrator/path/path_mats.cpp", "C++", -2, 0, 0, 0, 0, 0, -2
+"/home/sim/Github/Nori/src/integrator/path/path_mis.cpp", "C++", -2, 0, 0, 0, 0, 0, -2
+"/home/sim/Github/Nori/src/integrator/path/whitted.cpp", "C++", -2, 0, 0, 0, 0, 0, -2
+"/home/sim/Github/Nori/src/integrator/toy/ambient_occlusion.cpp", "C++", -4, 0, 0, 0, 0, -1, -5
+"/home/sim/Github/Nori/src/integrator/toy/average_visibility.cpp", "C++", -4, 0, 0, 0, 0, -1, -5
+"/home/sim/Github/Nori/src/integrator/toy/normals.cpp", "C++", -4, 0, 0, 0, 0, -1, -5
+"/home/sim/Github/Nori/src/integrator/toy/nprintegrator.cpp", "C++", 0, 0, 0, 0, 1, -5, -4
+"/home/sim/Github/Nori/src/integrator/toy/simple.cpp", "C++", -4, 0, 0, 0, 0, -1, -5
+"/home/sim/Github/Nori/src/main.cpp", "C++", 6, 0, 0, 0, 1, 0, 7
+"/home/sim/Github/Nori/src/perspective.cpp", "C++", 44, 0, 0, 0, 11, 7, 62
+"/home/sim/Github/Nori/src/render.cpp", "C++", 0, 0, 0, 0, -17, -1, -18
+"Total", "-", 24, 53, 147, -11, 7, 47, 267

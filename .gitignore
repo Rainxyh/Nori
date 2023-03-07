@@ -619,3 +619,4 @@ rules.ninja
 *.opendb
 Debug
 x64
+.VSCodeCounter

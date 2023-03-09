@@ -89,12 +89,12 @@ public:
 protected:
     Point2i  m_offset;
     Vector2i m_size;
-    int      m_borderSize   = 0;
-    float    m_lookupFactor = 0;
-    float    m_filterRadius = 0;
-    float   *m_filter       = nullptr;
-    float   *m_weightsX     = nullptr;
-    float   *m_weightsY     = nullptr;
+    int      m_borderSize   = 0; // rounding filter radius
+    float    m_lookupFactor = 0; // pos -> filter index
+    float    m_filterRadius = 0; // centor pixel + 2 * filtering range
+    float   *m_filter       = nullptr; // Weights table
+    float   *m_weightsX     = nullptr; // Weights of X dimension
+    float   *m_weightsY     = nullptr; // Weights of Y dimension
     mutable tbb::mutex m_mutex;
 };
 
@@ -132,14 +132,14 @@ public:
 protected:
     enum EDirection { ERight = 0, EDown, ELeft, EUp }; // clockwise
 
-    Point2i m_block;
-    Vector2i m_numBlocks;
-    Vector2i m_size;
-    int m_blockSize;
-    int m_numSteps;
-    int m_blocksLeft;
-    int m_stepsLeft;
-    int m_direction;
+    Point2i m_block; // current block index (2-dim)
+    Vector2i m_numBlocks; // total number of blocks index
+    Vector2i m_size; // bitmap size (width and height)
+    int m_blockSize; // block square side length
+    int m_numSteps; // step need to move in this turn
+    int m_blocksLeft; // total number of blocks
+    int m_stepsLeft; // left steps in this turn
+    int m_direction; // current direction
     tbb::mutex m_mutex;
 };
 

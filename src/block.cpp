@@ -129,7 +129,7 @@ bool BlockGenerator::next(ImageBlock &block) {
         return true;
 
     do {
-        switch (m_direction) {
+        switch (m_direction) { // changes every step
             case ERight: ++m_block.x(); break;
             case EDown:  ++m_block.y(); break;
             case ELeft:  --m_block.x(); break;
@@ -138,7 +138,7 @@ bool BlockGenerator::next(ImageBlock &block) {
         if (--m_stepsLeft == 0) {
             m_direction = (m_direction + 1) % 4;
             if (m_direction == ELeft || m_direction == ERight) 
-                ++m_numSteps;
+                ++m_numSteps;  // changes every two times the direction switch
             m_stepsLeft = m_numSteps;
         }
     } while ((m_block.array() < 0).any() ||

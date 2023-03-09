@@ -154,7 +154,7 @@ static void render(Scene *scene, const std::string &filename) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 2) { // prompt if there are less than 2 parameters
+    if (argc < 2) { // prompt if there are less than 2 parameters, file path (default) and scene.xml is necessary.
         cerr << "Syntax: " << argv[0] << " <scene.xml> [--no-gui] [--threads N]" <<  endl;
         return -1;
     }
@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
         cerr << "Please provide the path to a .xml (or .exr) file." << endl;
         return -1;
     }
-    else if (exrName != "") { // show exr image
+    else if (exrName != "") { // show .exr image
         if (!gui) {
             cerr << "Flag --no-gui was set. Please remove it to display the EXR file." << endl;
             return -1;

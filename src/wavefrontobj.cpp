@@ -30,7 +30,7 @@ public:
         std::vector<Vector2f>   texcoords;
         std::vector<Vector3f>   normals;
         std::vector<uint32_t>   indices;
-        std::vector<OBJVertex>  vertices;
+        std::vector<OBJVertex>  vertices; // Store vertex information in buffer to avoid multiple reuse 
         VertexMap vertexMap;
         std::string usemtl_pointer;
 
@@ -41,7 +41,7 @@ public:
             std::string prefix;
             line >> prefix;
 
-            if (prefix == "v") { // point
+            if (prefix == "v") { // position
                 Point3f p;
                 line >> p.x() >> p.y() >> p.z();
                 p = trafo * p;
@@ -58,7 +58,7 @@ public:
                 Normal3f n;
                 line >> n.x() >> n.y() >> n.z();
                 normals.push_back((trafo * n).normalized());
-            } else if (prefix == "f") { // face
+            } else if (prefix == "f") { // face include 3 vertex information
                 std::string v1, v2, v3, v4;
                 line >> v1 >> v2 >> v3 >> v4;
                 OBJVertex verts[6];
@@ -68,7 +68,7 @@ public:
                 verts[1] = OBJVertex(v2);
                 verts[2] = OBJVertex(v3);
 
-                if (!v4.empty()) {
+                if (!v4.empty()) { // quad shares two vertices
                     /* This is a quad, split into two triangles */
                     verts[3] = OBJVertex(v4);
                     verts[4] = verts[0];
@@ -81,9 +81,9 @@ public:
                     const OBJVertex &v = verts[i];
                     VertexMap::const_iterator it = vertexMap.find(v);
                     if (it == vertexMap.end()) { // new vectex
-                        vertexMap[v] = (uint32_t) vertices.size();
+                        vertexMap[v] = (uint32_t) vertices.size(); // update hashmap[vectex] to current index
                         indices.push_back((uint32_t) vertices.size()); // currrent vertex's index in collection
-                        vertices.push_back(v); // build vectex collection
+                        vertices.push_back(v); // build vectex collection, take care of execute sequence
                     } else { // vectex has been pushed in vertices
                         indices.push_back(it->second);
                     }
@@ -92,27 +92,28 @@ public:
             } else if (prefix == "mtllib"){ // material library file
                 std::string mtl_file_name;
                 line >> mtl_file_name;
-            } else if (prefix == "usemtl"){ // map certain mtl
+            } else if (prefix == "usemtl"){ // map certain material
                 line >> usemtl_pointer;
             }
         }
-        m_F.resize(3, indices.size() / 3);
-        memcpy(m_F.data(), indices.data(), sizeof(uint32_t) * indices.size());
+        m_F.resize(3, indices.size() / 3); // indices may repeat
+        memcpy(m_F.data(), indices.data(), sizeof(uint32_t) * indices.size()); // MatrixXf default ColMajor
 
-        m_V.resize(3, vertices.size());
+        m_V.resize(3, vertices.size()); // vertices will not repeat
         for (uint32_t i=0; i<vertices.size(); ++i)
             m_V.col(i) = positions.at(vertices[i].p-1);
+
+        if (!texcoords.empty())
+        {
+            m_UV.resize(2, vertices.size());
+            for (uint32_t i = 0; i < vertices.size(); ++i)
+                m_UV.col(i) = texcoords.at(vertices[i].uv - 1);
+        }
 
         if (!normals.empty()) {
             m_N.resize(3, vertices.size());
             for (uint32_t i=0; i<vertices.size(); ++i)
                 m_N.col(i) = normals.at(vertices[i].n-1);
-        }
-
-        if (!texcoords.empty()) {
-            m_UV.resize(2, vertices.size());
-            for (uint32_t i=0; i<vertices.size(); ++i)
-                m_UV.col(i) = texcoords.at(vertices[i].uv-1);
         }
 
         m_name = filename.str();
@@ -126,9 +127,9 @@ public:
 protected:
     /// Vertex indices used by the OBJ format
     struct OBJVertex {
-        uint32_t p = (uint32_t) -1;
-        uint32_t n = (uint32_t) -1;
-        uint32_t uv = (uint32_t) -1;
+        uint32_t p = (uint32_t) -1;  // position
+        uint32_t n = (uint32_t) -1;  // normal
+        uint32_t uv = (uint32_t) -1; // textrure
 
         inline OBJVertex() { }
 
@@ -140,7 +141,7 @@ protected:
 
             p = StringtoUInt(tokens[0]);
 
-            if (tokens.size() >= 2 && !tokens[1].empty())
+            if (tokens.size() >= 2 && !tokens[1].empty()) // 
                 uv = StringtoUInt(tokens[1]);
 
             if (tokens.size() >= 3 && !tokens[2].empty())

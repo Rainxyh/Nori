@@ -5,9 +5,7 @@
 	</sampler>
 
     <!-- Render the visible surface normals -->
-    <integrator type="normals">
-        <string name="myProperty" value="Hello!"/>
-    </integrator>
+    <integrator type="normals"/>
 
     <!-- Load the Stanford bunny (https://graphics.stanford.edu/data/3Dscanrep/) -->
 	<mesh type="obj">

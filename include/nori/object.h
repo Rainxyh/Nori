@@ -73,16 +73,19 @@ public:
     /// Turn a class type into a human-readable string
     static std::string classTypeName(EClassType type) {
         switch (type) {
-            case EScene:      return "scene";
-            case EMesh:       return "mesh";
-            case ETexture:    return "texture";
-            case EBSDF:       return "bsdf";
-            case EEmitter:    return "emitter";
-            case ECamera:     return "camera";
-            case EIntegrator: return "integrator";
-            case ESampler:    return "sampler";
-            case ETest:       return "test";
-            default:          return "<unknown>";
+            case EScene:                return "scene";
+            case EMesh:                 return "mesh";
+            case ETexture:              return "texture";
+            case EBSDF:                 return "bsdf";
+            case EPhaseFunction:        return "phasefunction";
+            case EEmitter:              return "emitter";
+            case EMedium:               return "bsdf";
+            case ECamera:               return "camera";
+            case EIntegrator:           return "integrator";
+            case ESampler:              return "sampler";
+            case ETest:                 return "test";
+            case EReconstructionFilter: return "filter";
+            default:                    return "<unknown>";
         }
     }
 };
@@ -126,40 +129,39 @@ public:
     static NoriObject *createInstance(const std::string &name, const PropertyList &propList);
 
 private:
-    static std::map<std::string, Constructor> *m_constructors;
+    static std::map<std::string, Constructor> *m_constructors; // nori object name and certain constructor
 };
 
+
+// NORI_REGISTER_CLASS(XXX, NAME)
+// {
+//     XXX *XXX_CRATE(const PropertyList &list)
+//     {
+//         return new XXX(list);
+//     }
+
+//     static struct XXX_ // underline is essential, prevent mutil define
+//     {
+//         // constructor calls registerClass to register
+//         XXX_() 
+//         {
+//             // Get the constructor of the corresponding class and add it to the Map of the factory
+//             NoriObjectFactory::registerClass(NAME, XXX_CRATE); 
+//         }
+//     } XXX__NORI_;
+// }
 /// Macro for registering an object constructor with the \ref NoriObjectFactory, macro use "##" to link string
-#define NORI_REGISTER_CLASS(cls, name)                            \
-    cls *cls##_create(const PropertyList &list)                   \
-    {                                                             \
-        return new cls(list);                                     \
-    }                                                             \
-    static struct cls##_                                          \
-    {                                                             \
-        cls##_()                                                  \
-        {                                                         \
-            NoriObjectFactory::registerClass(name, cls##_create); \
-        }                                                         \
-    } cls##__NORI_;
-/*
-NORI_REGISTER_CLASS(XXX, name)
-{
-    XXX *XXX_creat(const PropertyList &list)
-    {
-        return new XXX(list);
-    }
-
-    static struct XXX_
-    {
-        // constructor calls registerClass to register
-        XXX_() 
-        {
-            // Get the constructor of the corresponding class and add it to the Map of the factory
-            NoriObjectFactory::registerClass(name, XXX_create); 
-        }
-    } XXX__NORI_;
-}
-*/
-
+#define NORI_REGISTER_CLASS(CLASS, NAME)                            \
+    CLASS *CLASS##_CRATE(const PropertyList &list)                  \
+    {                                                               \
+        return new CLASS(list);                                     \
+    }                                                               \
+    static struct CLASS##_                                          \
+    {                                                               \
+        CLASS##_()                                                  \
+        {                                                           \
+            NoriObjectFactory::registerClass(NAME, CLASS##_CRATE);  \
+        }                                                           \
+    } CLASS##__NORI_;
+    
 NORI_NAMESPACE_END

@@ -47,10 +47,9 @@ static void renderBlock(const Scene *scene, Sampler *sampler, ImageBlock &block)
 #endif
 
                 /* Compute the incident radiance */
-                // value *= integrator->Li(scene, sampler, ray); // iterator
-                size_t depth = 0;
+                value *= integrator->Li(scene, sampler, ray); // iterator
+                // size_t depth = 0;
                 // value *= integrator->Li(scene, sampler, ray, depth); // recursion
-                value *= integrator->Li(scene, sampler, ray); // ray differential
 
                 /* Store in the image block */
                 block.put(pixelSample, value);
@@ -82,13 +81,15 @@ static void render(Scene *scene, const std::string &filename) {
     std::thread render_thread([&] {
         tbb::task_scheduler_init init(threadCount);
 
-        cout << "Rendering .. ";
+        cout << "Rendering .. (threads:" << threadCount << ")";
         cout.flush();
         Timer timer;
 
         tbb::blocked_range<int> range(0, blockGenerator.getBlockCount());
 
-        auto map = [&](const tbb::blocked_range<int> &range) {
+        // Range in the lambda expression is not the same as the local variable above; the range in the expression is already divided
+        // Current range single thread, other threads are also currently performing calculations
+        auto map = [&](const tbb::blocked_range<int> &range) { 
             /* Allocate memory for a small image block to be rendered
                by the current thread */
             ImageBlock block(Vector2i(NORI_BLOCK_SIZE),
@@ -105,7 +106,7 @@ static void render(Scene *scene, const std::string &filename) {
                 sampler->prepare(block);
 
                 /* Render all contained pixels */
-                renderBlock(scene, sampler.get(), block);
+                renderBlock(scene, sampler.get(), block); // Performance bottleneck
 
                 /* The image block has been processed. Now add it to
                    the "big" block that represents the entire image */
@@ -130,7 +131,7 @@ static void render(Scene *scene, const std::string &filename) {
             std::string outputName = filename;
             size_t lastdot = outputName.find_last_of(".");
             if (lastdot != std::string::npos)
-                outputName.erase(lastdot, std::string::npos);
+                outputName.erase(lastdot, std::string::npos); // erase from '.' to end
 
             /* Save using the OpenEXR format */
             bitmap->saveEXR(outputName);
@@ -145,7 +146,7 @@ static void render(Scene *scene, const std::string &filename) {
         nanogui::mainloop(50.f);
 
     /* Shut down the user interface */
-    render_thread.join();
+    render_thread.join(); // Wait for the thread to terminate
 
     if (gui) {
         delete screen;

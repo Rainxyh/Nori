@@ -52,7 +52,7 @@ public:
 
         Eigen::Matrix4f perspective;
         perspective <<
-            cot, 0,   0,   0,
+         cot,    0,   0,   0,
             0, cot,   0,   0,
             0,   0,   m_farClip * recip, -m_nearClip * m_farClip * recip,
             0,   0,   1,   0;
@@ -184,9 +184,9 @@ private:
     Vector2f m_invOutputSize;
     Transform m_sampleToCamera;
     Transform m_cameraToWorld;
-    float m_fov;
-    float m_nearClip;
-    float m_farClip;
+    float m_fov; // field of view
+    float m_nearClip; // near plane
+    float m_farClip; // far plane
     
     // RayDifferential
     int m_rayStencilQuality;

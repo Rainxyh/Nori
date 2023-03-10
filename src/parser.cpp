@@ -57,7 +57,7 @@ NoriObject *loadFromXML(const std::string &filename)
         ETest                 = NoriObject::ETest,
         EReconstructionFilter = NoriObject::EReconstructionFilter,
 
-        /* Properties */
+        /* Data type */
         EBoolean = NoriObject::EClassTypeCount,
         EInteger,
         EFloat,
@@ -66,6 +66,7 @@ NoriObject *loadFromXML(const std::string &filename)
         EVector,
         EColor,
 
+        /* Properties */
         ETransform,
         ETranslate,
         EMatrix,
@@ -82,8 +83,8 @@ NoriObject *loadFromXML(const std::string &filename)
     auto names2IDs = [&](std::string tagName, ETag tag){
         std::vector<std::string> tagNameList;
         stringIgnoreCase(tagName, 0, tagNameList);
-        std::for_each(tagNameList.begin(), tagNameList.end(), [&](std::string tagname)
-                      { tags[tagname] = tag; });
+        for (std::string name : tagNameList)
+            tags[name] = tag;
     };
     names2IDs("scene", EScene);
     // tags["scene"]      = EScene;
@@ -146,7 +147,7 @@ NoriObject *loadFromXML(const std::string &filename)
 
         /* Look up the name of the current element */
         auto it = tags.find(node.name());
-        if (it == tags.end())
+        if (it == tags.end()) // undefined
             throw NoriException("Error while parsing \"%s\": unexpected tag \"%s\" at %s",
                                 filename, node.name(), offset(node.offset_debug()));
 
@@ -188,7 +189,7 @@ NoriObject *loadFromXML(const std::string &filename)
         NoriObject *result = nullptr;
         try
         {
-            if (currentIsObject)
+            if (currentIsObject) // <noriobject>
             {
                 check_attributes(node, {"type"}); // <noriobject> labels only have <type> attribute
 
@@ -218,7 +219,7 @@ NoriObject *loadFromXML(const std::string &filename)
                 /* Activate / configure the object */
                 result->activate();
             }
-            else
+            else  // <data types or properties>
             {
                 /* This is a property */
                 switch (tag)

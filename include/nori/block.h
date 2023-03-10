@@ -46,9 +46,9 @@ public:
     /// Return the offset of the block within the main image
     inline const Point2i &getOffset() const { return m_offset; }
     /// Configure the size of the block within the main image
-    void setSize(const Point2i &size) { m_size = size; }
+    void setSize(const Point2i &size) { m_outputSize = size; }
     /// Return the size of the block within the main image
-    inline const Vector2i &getSize() const { return m_size; }
+    inline const Vector2i &getSize() const { return m_outputSize; }
     /// Return the border size in pixels
     inline int getBorderSize() const { return m_borderSize; }
 
@@ -88,10 +88,10 @@ public:
 
 protected:
     Point2i  m_offset;
-    Vector2i m_size;
-    int      m_borderSize   = 0; // rounding filter radius
-    float    m_lookupFactor = 0; // pos -> filter index
-    float    m_filterRadius = 0; // centor pixel + 2 * filtering range
+    Vector2i m_outputSize;
+    int      m_borderSize   = 0;       // rounding filter radius
+    float    m_lookupFactor = 0;       // pos -> filter index
+    float    m_filterRadius = 0;       // centor pixel + 2 * filtering range
     float   *m_filter       = nullptr; // Weights table
     float   *m_weightsX     = nullptr; // Weights of X dimension
     float   *m_weightsY     = nullptr; // Weights of Y dimension
@@ -110,12 +110,12 @@ class BlockGenerator {
 public:
     /**
      * \brief Create a block generator with
-     * \param size
+     * \param outputSize
      *      Size of the image that should be split into blocks
      * \param blockSize
      *      Maximum size of the individual blocks
      */
-    BlockGenerator(const Vector2i &size, int blockSize);
+    BlockGenerator(const Vector2i &outputSize, int blockSize);
     
     /**
      * \brief Return the next block to be rendered
@@ -132,14 +132,14 @@ public:
 protected:
     enum EDirection { ERight = 0, EDown, ELeft, EUp }; // clockwise
 
-    Point2i m_block; // current block index (2-dim)
+    Point2i m_block;      // current block index (2-dim)
     Vector2i m_numBlocks; // total number of blocks index
-    Vector2i m_size; // bitmap size (width and height)
-    int m_blockSize; // block square side length
-    int m_numSteps; // step need to move in this turn
-    int m_blocksLeft; // total number of blocks
-    int m_stepsLeft; // left steps in this turn
-    int m_direction; // current direction
+    Vector2i m_outputSize;      // bitmap size (width and height)
+    int m_blockSize;      // block square side length
+    int m_numSteps;       // step need to move in this turn
+    int m_blocksLeft;     // total number of blocks which need to parallel
+    int m_stepsLeft;      // left steps in this turn
+    int m_direction;      // current direction
     tbb::mutex m_mutex;
 };
 

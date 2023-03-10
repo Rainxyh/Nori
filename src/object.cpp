@@ -13,6 +13,7 @@ void NoriObject::setParent(NoriObject *) { /* Do nothing */ }
 
 std::map<std::string, NoriObjectFactory::Constructor> *NoriObjectFactory::m_constructors = nullptr; // Static member variables initialized outside the class
 
+// Save corresponding constructor in map
 void NoriObjectFactory::registerClass(const std::string &name, const Constructor &constr) {
     if (!m_constructors)
         m_constructors = new std::map<std::string, NoriObjectFactory::Constructor>();
@@ -21,9 +22,9 @@ void NoriObjectFactory::registerClass(const std::string &name, const Constructor
 
 // Call the corresponding constructor to obtain an instance by parsing the xml parameter list obtained
  NoriObject *NoriObjectFactory::createInstance(const std::string &name, const PropertyList &propList){
-    if (!m_constructors || m_constructors->find(name) == m_constructors->end())
+    if (!m_constructors || m_constructors->end() == m_constructors->find(name))
         throw NoriException("A constructor for class \"%s\" could not be found!", name);
-    return (*m_constructors)[name](propList); // call certain NoriObjectFactory::Constructor
+    return (*m_constructors)[name](propList); // call certain construct (std::function<NoriObject *(const PropertyList &)>)
  }
 
 NORI_NAMESPACE_END

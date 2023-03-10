@@ -216,7 +216,7 @@ Transform Transform::operator*(const Transform &t) const {
         t.m_inverse * m_inverse);
 }
 
-void stringIgnoreCase(std::string str, size_t depth, std::vector<std::string> &strList){
+void stringIgnoreCase(std::string str, size_t depth, std::vector<std::string> &strList){ // depth first search
     if (depth == str.length()){
         strList.push_back(str);
         return;

@@ -52,7 +52,7 @@ class Camera : public NoriObject {
     EClassType getClassType() const { return ECamera; }
 
    protected:
-    Vector2i m_outputSize;
+    Vector2i m_outputSize; // width * height
     ReconstructionFilter* m_rfilter;
 };
 

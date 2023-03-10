@@ -117,7 +117,7 @@ add_executable(nori
   src/main.cpp
   src/mesh.cpp
   src/texture_image.cpp
-  src/obj.cpp
+  src/wavefrontobj.cpp
   src/object.cpp
   src/parser.cpp
   src/perspective.cpp
